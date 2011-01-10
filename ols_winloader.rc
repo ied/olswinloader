@@ -1,0 +1,302 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\ols_winloader.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\ols_winloader.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 252, 148
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Logic Sniffer FPGA Image Loader"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC_ICON,11,12,20,20
+    LTEXT           "Open Logic Sniffer FPGA Image Loader - Version 1.02",
+                    IDC_STATIC,52,10,193,8,SS_NOPREFIX
+    DEFPUSHBUTTON   "OK",IDOK,100,122,50,14,WS_GROUP
+    LTEXT           "For more information see:\n   http://dangerousprototypes.com/open-logic-sniffer\n   http://www.gadgetfactory.net/gf/project/bufferflylogic",
+                    IDC_STATIC,52,42,193,31,SS_NOPREFIX
+    LTEXT           "Some portions may embody copyrights of the following:\n   © 2010 Michal Demin - FPGA Image Loader\n   © 1998-2010 PJ Naughter - Serial Enumerator\n   © 1999 Eran Yariv - Two Pass Image Scaler\n   © 2001-2002 David Yuheng Zhao - Visual Themes",
+                    IDC_STATIC,52,73,193,44,SS_NOPREFIX
+    LTEXT           "Copyright © 2011 by Ian Davis\nThis software is released under the GNU GPL2.",
+                    IDC_STATIC,52,18,193,16,SS_NOPREFIX
+END
+
+IDD_OLS_WINLOADER_DIALOG DIALOGEX 0, 0, 320, 220
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Logic Sniffer FPGA Image Loader"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_ANALYZERPORT_LIST,69,52,205,34,LBS_SORT | 
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_IMAGEFILE,69,95,205,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_REFRESH,"Button",BS_OWNERDRAW | WS_TABSTOP,284,53,
+                    17,15
+    PUSHBUTTON      "...",IDC_BROWSE,284,95,17,14
+    CONTROL         "OK",IDOK,"Button",BS_OWNERDRAW | WS_TABSTOP,51,187,65,
+                    18
+    CONTROL         "Cancel",IDCANCEL,"Button",BS_OWNERDRAW | WS_TABSTOP,127,
+                    187,65,18
+    PUSHBUTTON      "Close",IDCLOSE,132,187,55,18,NOT WS_VISIBLE
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,17,14,285,24
+    CTEXT           "Write a new FPGA image into the Open Logic Sniffer Flash ROM.",
+                    IDC_STATIC,37,18,244,16,SS_CENTERIMAGE
+    RTEXT           "Analyzer Port:",IDC_STATIC,3,53,62,14,SS_CENTERIMAGE
+    RTEXT           "Image File:",IDC_STATIC,3,94,62,14,SS_CENTERIMAGE
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,17,124,285,48
+    LTEXT           "Instructions:\n    Select port your OLS is connected to and the FPGA image file to upload.\n    On OLS, hold down UPDATE button while pressing && releasing RESET button.\n    Click OK below to begin upload.",
+                    IDC_STATIC_HELP,27,131,264,34
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",NOT 
+                    WS_VISIBLE | WS_BORDER,37,141,244,14
+    LTEXT           "Status",IDC_STATUS,37,131,244,8,NOT WS_VISIBLE
+    CTEXT           "Status",IDC_STATUS2,37,159,244,8,SS_CENTERIMAGE | NOT 
+                    WS_VISIBLE
+    CONTROL         "Advanced",IDADVANCE,"Button",BS_OWNERDRAW | WS_TABSTOP,
+                    203,187,65,18
+END
+
+IDD_ADVANCED_DIALOG DIALOG DISCARDABLE  0, 0, 294, 190
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Advanced OLS Loader Options"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,48,161,55,16
+    PUSHBUTTON      "Cancel",IDCANCEL,119,161,55,16
+    CONTROL         "Backup old FPGA ROM image before writing new one",
+                    IDC_BACKUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,59,
+                    185,10
+    CONTROL         "Do not erase FPGA before writing (not recommended)",
+                    IDC_NOERASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,72,
+                    184,10
+    CONTROL         "Query OLS status before writing",IDC_OLSSTATUS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,35,85,115,10
+    CONTROL         "Enter run mode after finishing upload",IDC_RUNMODE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,111,131,10
+    CONTROL         "Perform OLS self test before writing",IDC_SELFTEST,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,98,126,10
+    CONTROL         "Ignore Flash ROM JEDIC Code",IDC_IGNOREJEDIC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,35,124,114,10
+    COMBOBOX        IDC_PORTSPEED,210,122,60,63,CBS_DROPDOWNLIST | 
+                    WS_TABSTOP
+    RTEXT           "Port Speed:",IDC_STATIC,158,124,49,10,SS_CENTERIMAGE
+    CTEXT           "CAUTION: If you don't know what you are doing, leave these options alone.",
+                    IDC_STATIC,16,14,264,17,SS_CENTERIMAGE
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,14,11,268,23
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,14,45,268,103
+    PUSHBUTTON      "Defaults",IDDEFAULT,190,161,55,16
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,2,0
+ PRODUCTVERSION 1,0,2,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "This software is released under the GNU GPL2.\0"
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "Open Logic Sniffer Windows FPGA Image Loader\0"
+            VALUE "FileVersion", "1, 0, 2, 0\0"
+            VALUE "InternalName", "ols_winloader\0"
+            VALUE "LegalCopyright", "Copyright (C) 2011 Ian Davis\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "ols_winloader.EXE\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "Open Logic Sniffer Windows FPGA Image Loader\0"
+            VALUE "ProductVersion", "1, 0, 2, 0\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 245
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 141
+    END
+
+    IDD_OLS_WINLOADER_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 313
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 213
+    END
+
+    IDD_ADVANCED_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 287
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 183
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_REFRESH             BITMAP  DISCARDABLE     "res\\refresh.bmp"
+IDB_CANCEL              BITMAP  DISCARDABLE     "res\\bmp00002.bmp"
+IDB_START               BITMAP  DISCARDABLE     "res\\bitmap1.bmp"
+IDB_ADVANCED            BITMAP  DISCARDABLE     "res\\bmp00001.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 24
+//
+
+1                       24      DISCARDABLE     "res\\xptheme.bin"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "&About..."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDR_FPGAHEXFILE         "\nNewSkit\nFPGA Image File\nFPGA HEX Image Files (*.hex)\n.hex\nImageHEXFile\nFPGA HEX Image File"
+    IDR_FPGABINFILE         "\nNewSkit\nFPGA Binary Image File\nFPGA Binary Image Files (*.bin)\n.bin\nImageBINFile\nFPGA Binary Image File"
+    IDR_FPGABITFILE         "\nNewSkit\nFPGA BIT Image File\nFPGA BIT Image Files (*.bit)\n.bit\nImageBITFile\nFPGA BIT Image File"
+    IDR_FPGAMCSFILE         "\nNewSkit\nFPGA Image File\nFPGA MCS Hex Image Files (*.mcs)\n.mcs\nImageMCSFile\nFPGA MCS Hex Image File"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\ols_winloader.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
