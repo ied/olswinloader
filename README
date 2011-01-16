@@ -1,5 +1,21 @@
 
-Open Logic Sniffer FPGA image flash ROM loader for Windows.
-Source is VC6 compatible.
+Open Logic Sniffer FPGA Image Loader
+Copyright © 2011 by Ian Davis
+This software is released under the GNU GPL2.
+
+A Windows GUI based program for loading new FPGA images into
+the OLS.  Source is VC6 compatible.
+
+For more information see:
+  http://dangerousprototypes.com/open-logic-sniffer
+  http://www.gadgetfactory.net/gf/project/butterflylogic
+  http://www.mygizmos.org
+
+Some portions may embody copyrights of the following:
+  © 2010 Michal Demin - FPGA Image Loader (ols_loader)
+  © 1998-2010 PJ Naughter - Serial Port Enumerator
+  © 1999 Eran Yariv - Two Pass Image Scaler
+  © 2001-2002 David Yuheng Zhao - Visual Themes
+
 Download.  Compile.  Enjoy.
 
