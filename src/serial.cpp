@@ -6,9 +6,9 @@
  *
  */
 
-#ifdef WIN32
 #include "stdafx.h"
-#else
+
+#ifndef WIN32
 #include <stdint.h>
 #include <fcntl.h>
 #endif

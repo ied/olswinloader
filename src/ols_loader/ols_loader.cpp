@@ -1,8 +1,9 @@
 // ols_loader.cpp : Defines the entry point for the console application.
 //
-#ifdef WIN32
+
 #include "stdafx.h"
-#else
+
+#ifndef WIN32
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -8,9 +8,9 @@
  *
  */
 
-#ifdef WIN32
 #include "stdafx.h"
-#else
+
+#ifndef WIN32
 #include <stdio.h>
 #include <memory.h>
 #define TCHAR char
