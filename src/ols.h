@@ -11,6 +11,10 @@
 #ifndef _OLS_H_
 #define _OLS_H_
 
+#ifndef WIN32
+#include <stdint.h>
+#endif
+
 #define OLSRESULT_SUCCESS 0
 #define OLSRESULT_TIMEOUT -1             // Timeout while attempting to access OLS
 #define OLSRESULT_CMDWRITE_ERROR -2      // Error writing command to OLS
@@ -50,7 +54,7 @@ int PUMP_GetStatus(int pump_fd, uint8_t *result);
 int PUMP_GetID(int pump_fd, uint8_t *result, int result_maxsize);
 int PUMP_EnterBootloader(int pump_fd);
 int PUMP_EnterRunMode(int pump_fd);
-int PUMP_GetFlashID(int pump_fd, int *flashid, uint8_t *flashjedic, int flashjedic_maxsize, bool cmd_ignore_jedec);
+int PUMP_GetFlashID(int pump_fd, int *flashid, uint8_t *flashjedic, int flashjedic_maxsize, int cmd_ignore_jedec);
 int PUMP_FlashErase(int pump_fd, int flashid);
 int PUMP_FlashRead(int pump_fd, int flashid, int page, uint8_t *buf);
 int PUMP_FlashWrite(int pump_fd, int flashid, int page, uint8_t *buf);

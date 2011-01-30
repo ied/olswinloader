@@ -11,7 +11,16 @@
  *
  */
 
+#ifdef WIN32
 #include "stdafx.h"
+#else
+#include <stdio.h>
+#include <memory.h>
+#define TCHAR char
+#define _T(a) a
+#define wsprintf sprintf
+#endif
+
 #include "data_file.h"
 
 
@@ -21,7 +30,7 @@
 TCHAR *FileResultErrorMsg (int errcode, const char *targetfile, const char *romtype)
 {
   static TCHAR temp[1024];
-	switch (errcode) {
+  switch (errcode) {
     case FILERESULT_SUCCESS :
       return _T("No error.");
 
@@ -59,13 +68,13 @@ TCHAR *FileResultErrorMsg (int errcode, const char *targetfile, const char *romt
  */
 uint8_t Data_Checksum(uint8_t *buf, uint16_t size) 
 {
-	uint16_t i;
-	uint8_t sum = 0;
+  uint16_t i;
+  uint8_t sum = 0;
 
-	for (i=0; i<size; i++) {
-		sum -= buf[i];
-	}
-	return sum;
+  for (i=0; i<size; i++) {
+    sum -= buf[i];
+  }
+  return sum;
 }
 
 
@@ -77,77 +86,77 @@ uint8_t Data_Checksum(uint8_t *buf, uint16_t size)
  */
 int HEX_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size, uint32_t *read_bytes) 
 {
-	char raw_line[256];
-	int line = 0;
-	uint32_t base_addr;
-	FILE *fp;
-	uint32_t addr_max=0;
+  char raw_line[256];
+  int line = 0;
+  uint32_t base_addr;
+  FILE *fp;
+  uint32_t addr_max=0;
 
   if (read_bytes) *read_bytes=0;
 
   if (targetfile==NULL) return FILERESULT_ERROR_NEEDFILENAME;
 
-	fp = fopen(targetfile, "r");
-	if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
+  fp = fopen(targetfile, "r");
+  if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
 
-	while(fgets(raw_line, sizeof(raw_line), fp) != 0) {
-		// read line header
-		unsigned int tmp[3];
-		uint8_t byte_count;
-		uint32_t addr;
-		uint8_t rec_type;
+  while(fgets(raw_line, sizeof(raw_line), fp) != 0) {
+    // read line header
+    unsigned int tmp[3];
+    uint8_t byte_count;
+    uint32_t addr;
+    uint8_t rec_type;
 
-		if (raw_line[0] != ':') {
+    if (raw_line[0] != ':') {
       fclose (fp);
       return FILERESULT_ERROR_BADFILEFORMAT;
-		}
-		line ++;
+    }
+    line ++;
 
-		sscanf(raw_line+1, "%2x%4x%2x", &tmp[0], &tmp[1], &tmp[2]);
-		byte_count = tmp[0] & 0xff;
-		addr = tmp[1] & 0xffff;
-		rec_type = tmp[2] & 0xff;
+    sscanf(raw_line+1, "%2x%4x%2x", &tmp[0], &tmp[1], &tmp[2]);
+    byte_count = tmp[0] & 0xff;
+    addr = tmp[1] & 0xffff;
+    rec_type = tmp[2] & 0xff;
 
-		if (rec_type == 0x00) {
-			// data record
-			uint8_t chksum;
-			uint16_t i;
-			addr = base_addr | addr;
+    if (rec_type == 0x00) {
+      // data record
+      uint8_t chksum;
+      uint16_t i;
+      addr = base_addr | addr;
 
-			if (out_buf_size < byte_count + addr) {
-				fclose(fp);
-				return FILERESULT_ERROR_FILETOOBIG;
-			}
+      if (out_buf_size < byte_count + addr) {
+        fclose(fp);
+        return FILERESULT_ERROR_FILETOOBIG;
+      }
 
-			for (i=0; i<byte_count; i++) {
-				uint8_t byte;
-				sscanf(raw_line+9+2*i, "%2x", &tmp[0]);
-				byte = tmp[0];
-				out_buf[addr+i] = byte;
-				if (addr_max < addr+i) addr_max = addr+i;
-			}
-			sscanf(raw_line+9+2*i, "%2x", &tmp[0]);
-			chksum = tmp[0];
-			// TODO: check chksum
-		} 
+      for (i=0; i<byte_count; i++) {
+        uint8_t byte;
+        sscanf(raw_line+9+2*i, "%2x", &tmp[0]);
+        byte = tmp[0];
+        out_buf[addr+i] = byte;
+        if (addr_max < addr+i) addr_max = addr+i;
+      }
+      sscanf(raw_line+9+2*i, "%2x", &tmp[0]);
+      chksum = tmp[0];
+      // TODO: check chksum
+    } 
     else if (rec_type == 0x04) {
-			// base addr
-			sscanf(raw_line+9, "%4x", &base_addr);
-			base_addr <<= 16;
-		} 
+      // base addr
+      sscanf(raw_line+9, "%4x", &base_addr);
+      base_addr <<= 16;
+    } 
     else if (rec_type == 0x01) {
-			// end record
-			break;
-		} 
+      // end record
+      break;
+    } 
     else {
       fclose (fp);
       return FILERESULT_ERROR_BADFILEFORMAT;
-		}
-	}
+    }
+  }
 
-	fclose(fp);
+  fclose(fp);
   if (read_bytes) *read_bytes=addr_max+1;
-	return FILERESULT_SUCCESS;
+  return FILERESULT_SUCCESS;
 }
 
 /*
@@ -158,39 +167,39 @@ int HEX_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size
  */
 int HEX_WriteRec(FILE *fp, uint8_t rec_id, uint8_t byte_count, uint16_t addr, uint8_t *data, char *term) 
 {
-	int res;
-	uint8_t bin_line[128];
-	char raw_line[256];
-	uint8_t i=0;
-	uint8_t j;
+  int res;
+  uint8_t bin_line[128];
+  char raw_line[256];
+  uint8_t i=0;
+  uint8_t j;
 
   if (fp==NULL) return FILERESULT_ERROR_WRITEERROR;
 
-//	uint8_t checksum = 0;
+//  uint8_t checksum = 0;
 
-	// fill header
-	bin_line[0] = byte_count;
-	bin_line[1] = (addr >> 8) & 0xff;
-	bin_line[2] = addr & 0xff;
-	bin_line[3] = rec_id;
+  // fill header
+  bin_line[0] = byte_count;
+  bin_line[1] = (addr >> 8) & 0xff;
+  bin_line[2] = addr & 0xff;
+  bin_line[3] = rec_id;
 
-	// copy data
-	for (i=0; i<byte_count; i++) {
-		bin_line[4+i] = data[i];
-	}
+  // copy data
+  for (i=0; i<byte_count; i++) {
+    bin_line[4+i] = data[i];
+  }
 
-	// add checksum
-	bin_line[4+i] = Data_Checksum(bin_line, 4+i);
+  // add checksum
+  bin_line[4+i] = Data_Checksum(bin_line, 4+i);
 
-	// rewrite bin data to hex
-	res = wsprintf(raw_line, ":");
-	for (j=0; j<4+i+1; j++) {
-		res += wsprintf(raw_line+res, "%02X", bin_line[j]);
-	}
-	res += wsprintf(raw_line+res, term);
+  // rewrite bin data to hex
+  res = wsprintf(raw_line, ":");
+  for (j=0; j<4+i+1; j++) {
+    res += wsprintf(raw_line+res, "%02X", bin_line[j]);
+  }
+  res += wsprintf(raw_line+res, term);
 
-	// output to file
-	int written = fwrite(raw_line, sizeof(char), res, fp);
+  // output to file
+  int written = fwrite(raw_line, sizeof(char), res, fp);
   return (written==res) ? FILERESULT_SUCCESS : FILERESULT_ERROR_WRITEERROR;
 }
 
@@ -204,66 +213,66 @@ int HEX_WriteRec(FILE *fp, uint8_t rec_id, uint8_t byte_count, uint16_t addr, ui
  */
 int HEX_WriteFile(const char *targetfile, uint8_t *in_buf, uint32_t in_buf_size) 
 {
-	uint32_t written = 0;
-	uint16_t base = 0x0000;
-	uint32_t addr = 0x0000;
-	FILE *fp;
+  uint32_t written = 0;
+  uint16_t base = 0x0000;
+  uint32_t addr = 0x0000;
+  FILE *fp;
 
   if (targetfile==NULL) return FILERESULT_ERROR_NEEDFILENAME;
 
-	fp = fopen(targetfile, "wb"); // avoid newline fudging by windows
-	if (fp == NULL) return FILERESULT_ERROR_CANNOTOPENFILE;
+  fp = fopen(targetfile, "wb"); // avoid newline fudging by windows
+  if (fp == NULL) return FILERESULT_ERROR_CANNOTOPENFILE;
 
-	// ext address record
-	if (HEX_WriteRec(fp, 0x04, 2, 0x0000, (uint8_t*)(&base), "\n") != FILERESULT_SUCCESS) {
+  // ext address record
+  if (HEX_WriteRec(fp, 0x04, 2, 0x0000, (uint8_t*)(&base), "\n") != FILERESULT_SUCCESS) {
     fclose(fp);
     return FILERESULT_ERROR_WRITEERROR;
   }
 
-	while (written < in_buf_size) {
-		uint8_t byte_count;
-		if ((in_buf_size - written) > 0x10) {
-			byte_count = 0x10;
-		} 
+  while (written < in_buf_size) {
+    uint8_t byte_count;
+    if ((in_buf_size - written) > 0x10) {
+      byte_count = 0x10;
+    } 
     else {
-			byte_count = in_buf_size - written;
-		}
+      byte_count = in_buf_size - written;
+    }
 
-		// write data record
-		if (HEX_WriteRec(fp, 0x00, byte_count, addr, &in_buf[written], "\n") != FILERESULT_SUCCESS) {
+    // write data record
+    if (HEX_WriteRec(fp, 0x00, byte_count, addr, &in_buf[written], "\n") != FILERESULT_SUCCESS) {
       fclose(fp);
       return FILERESULT_ERROR_WRITEERROR;
     }
 
-		written += byte_count;
-		addr += byte_count;
+    written += byte_count;
+    addr += byte_count;
 
-		// write ext addr record
-		if (addr & 0x10000) {
-			uint8_t tmp[2];
+    // write ext addr record
+    if (addr & 0x10000) {
+      uint8_t tmp[2];
 
-			base ++;
+      base ++;
 
-			tmp[0] = (base >> 8) & 0xff;
-			tmp[1] = (base & 0xff);
+      tmp[0] = (base >> 8) & 0xff;
+      tmp[1] = (base & 0xff);
 
-			if (HEX_WriteRec(fp, 0x04, 2, 0x0000, tmp, "\n") != FILERESULT_SUCCESS) {
+      if (HEX_WriteRec(fp, 0x04, 2, 0x0000, tmp, "\n") != FILERESULT_SUCCESS) {
         fclose(fp);
         return FILERESULT_ERROR_WRITEERROR;
       }
 
-			addr -= 0x10000;
-		}
-	}
+      addr -= 0x10000;
+    }
+  }
 
-	// end record
-	if (HEX_WriteRec(fp, 0x01, 0x00, 0x0000, NULL,"\r\n") != FILERESULT_SUCCESS) {
+  // end record
+  if (HEX_WriteRec(fp, 0x01, 0x00, 0x0000, NULL,"\r\n") != FILERESULT_SUCCESS) {
     fclose(fp);
     return FILERESULT_ERROR_WRITEERROR;
   }
 
-	fclose(fp);
-	return FILERESULT_SUCCESS;
+  fclose(fp);
+  return FILERESULT_SUCCESS;
 }
 
 
@@ -276,35 +285,35 @@ int HEX_WriteFile(const char *targetfile, uint8_t *in_buf, uint32_t in_buf_size)
  */
 int BIN_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size, uint32_t *read_bytes) 
 {
-	int res;
-	long fsize;
-	FILE *fp;
+  int res;
+  long fsize;
+  FILE *fp;
 
   if (read_bytes) *read_bytes=0;
 
   if (targetfile==NULL) return FILERESULT_ERROR_NEEDFILENAME;
-	fp = fopen(targetfile, "rb");
-	if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
+  fp = fopen(targetfile, "rb");
+  if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
 
-	fseek(fp, 0, SEEK_END);
-	fsize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+  fseek(fp, 0, SEEK_END);
+  fsize = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
 
-	if (fsize > (long)out_buf_size) {
+  if (fsize > (long)out_buf_size) {
     fclose (fp);
     return FILERESULT_ERROR_FILETOOBIG;
-	}
+  }
 
-	res = fread(out_buf, sizeof(uint8_t), fsize, fp);
-	if (res <= 0) {
+  res = fread(out_buf, sizeof(uint8_t), fsize, fp);
+  if (res <= 0) {
     fclose (fp);
     return FILERESULT_ERROR_READERROR;
-	}
+  }
 
-	fclose (fp);
+  fclose (fp);
   if (read_bytes) *read_bytes=res;
 
-	return FILERESULT_SUCCESS;
+  return FILERESULT_SUCCESS;
 }
 
 
@@ -317,21 +326,21 @@ int BIN_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size
  */
 int BIN_WriteFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size) 
 {
-	FILE *fp;
-	int res;
+  FILE *fp;
+  int res;
 
   if (targetfile==NULL) return FILERESULT_ERROR_NEEDFILENAME;
-	fp = fopen(targetfile, "wb");
-	if (fp == NULL) return FILERESULT_ERROR_CANNOTOPENFILE;
+  fp = fopen(targetfile, "wb");
+  if (fp == NULL) return FILERESULT_ERROR_CANNOTOPENFILE;
 
-	res = fwrite(out_buf, sizeof(uint8_t), out_buf_size, fp);
-	if (res != (int)out_buf_size) {
+  res = fwrite(out_buf, sizeof(uint8_t), out_buf_size, fp);
+  if (res != (int)out_buf_size) {
     fclose (fp);
     return FILERESULT_ERROR_WRITEERROR;
-	}
+  }
 
-	fclose(fp);
-	return FILERESULT_SUCCESS;
+  fclose(fp);
+  return FILERESULT_SUCCESS;
 }
 
 
@@ -348,20 +357,20 @@ typedef struct {uint8_t id; uint16_t len;} blocktype;
 int BIT_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size, uint32_t *read_bytes) 
 {
   static uint8_t temp[4096];
-	int res, i, blockid, blocklen;
+  int res, i, blockid, blocklen;
 
   if (read_bytes) *read_bytes=0;
   if (targetfile==NULL) return FILERESULT_ERROR_NEEDFILENAME;
 
-	FILE *fp = fopen(targetfile, "rb");
-	if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
+  FILE *fp = fopen(targetfile, "rb");
+  if (fp == NULL) return FILERESULT_ERROR_FILENOTFOUND;
 
   // Read first 4K of file.   Should easily contain entire Xilinx bitfile header...
-	res = fread(temp, sizeof(uint8_t), sizeof(temp), fp);
-	if (res <= 0) {
+  res = fread(temp, sizeof(uint8_t), sizeof(temp), fp);
+  if (res <= 0) {
     fclose (fp);
     return FILERESULT_ERROR_READERROR;
-	}
+  }
 
   // Verify bitfile header...
   for (i=0; i<sizeof(g_bitfile_header); i++)
@@ -372,7 +381,7 @@ int BIT_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size
 
   // Parse the bitfile header...
   uint32_t datalen=0;
-  bool hdrdone=false;
+  int hdrdone=0;
   while (!hdrdone) {
     if ((i>=res-16)) {
       fclose (fp);
@@ -403,7 +412,7 @@ int BIT_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size
           return FILERESULT_ERROR_BADFILEFORMAT;
         }
 
-        hdrdone = true;
+        hdrdone = 1;
         break;
 
       default :
@@ -423,20 +432,20 @@ int BIT_ReadFile(const char *targetfile, uint8_t *out_buf, uint32_t out_buf_size
 
   // Get balance from file...
   if (datalen>templen) {
-	  res = fread(&out_buf[templen], sizeof(uint8_t), datalen-templen, fp);
-	  if (res <= 0) {
+    res = fread(&out_buf[templen], sizeof(uint8_t), datalen-templen, fp);
+    if (res <= 0) {
       fclose (fp);
       return FILERESULT_ERROR_READERROR;
-	  }
+    }
     if (res != (int)(datalen-templen)) {
       fclose (fp);
       return FILERESULT_ERROR_READERROR;
     }
   }
 
-	fclose (fp);
+  fclose (fp);
   if (read_bytes) *read_bytes = datalen;
 
-	return FILERESULT_SUCCESS;
+  return FILERESULT_SUCCESS;
 }
 

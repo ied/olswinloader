@@ -13,6 +13,10 @@
 #ifndef DATA_FILE_H_
 #define DATA_FILE_H_
 
+#ifndef WIN32
+#include <stdint.h>
+#endif
+
 #define FILERESULT_SUCCESS 0
 #define FILERESULT_ERROR_NEEDFILENAME -1   // Filename not specified.
 #define FILERESULT_ERROR_FILENOTFOUND -2   // File '%s' not found.

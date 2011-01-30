@@ -6,7 +6,13 @@
  *
  */
 
+#ifdef WIN32
 #include "stdafx.h"
+#else
+#include <stdint.h>
+#include <fcntl.h>
+#endif
+
 #include "serial.h"
 
 int serial_setup(int fd, unsigned long speed)

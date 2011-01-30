@@ -1,7 +1,17 @@
 // ols_loader.cpp : Defines the entry point for the console application.
 //
-
+#ifdef WIN32
 #include "stdafx.h"
+#else
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <stdint.h>
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+#endif
+
 #include "../ols.h"
 #include "../serial.h"
 #include "../data_file.h"
@@ -21,7 +31,7 @@ int cmd_write = 0;
 int cmd_status = 0;
 int cmd_boot = 0;
 int cmd_run = 0;
-bool cmd_ignore_jedec = false;
+int cmd_ignore_jedec = 0;
 int cmd_selftest = 0;
 
 int param_limit = -1;
@@ -39,10 +49,10 @@ int parseCommandLine(int argc, char** argv)
 {
 	int i = 0;
 
-  bool show_help=true;
+  int show_help=1;
 	for (i=1; i<argc; i++)
 	{
-    show_help = false;
+    show_help = 0;
 		if ( !strncmp(argv[i], "-p", 2) ) 
       param_port = argv[i] + 3;
     else if ( !strnicmp(argv[i], "-l", 2) ) 
@@ -76,25 +86,25 @@ int parseCommandLine(int argc, char** argv)
 			param_write_bin = argv[i] + 4;
 		} 
     else if ( !stricmp(argv[i], "-verbose") ) 
-      verbose = true;
+      verbose = 1;
 		else if ( !stricmp(argv[i], "-read") ) 
-      cmd_read = true;
+      cmd_read = 1;
 		else if ( !stricmp(argv[i], "-erase") ) 
-      cmd_erase = true;
+      cmd_erase = 1;
 		else if ( !stricmp(argv[i], "-status") ) 
-      cmd_status = true;
+      cmd_status = 1;
 		else if ( !stricmp(argv[i], "-write") ) 
-      cmd_write = true;
+      cmd_write = 1;
 		else if ( !stricmp(argv[i], "-run") ) 
-      cmd_run = true;
+      cmd_run = 1;
 		else if ( !stricmp(argv[i], "-boot") ) 
-      cmd_boot = true;
+      cmd_boot = 1;
 		else if ( !stricmp(argv[i], "-ignore_jedec") ) 
-      cmd_ignore_jedec = true;
+      cmd_ignore_jedec = 1;
     else if ( !stricmp(argv[i], "-selftest") ) 
-      cmd_selftest = true;
+      cmd_selftest = 1;
     else if ( !stricmp(argv[i], "--help") ) {
-			show_help = true;
+			show_help = 1;
 			break;
 		} 
     else {
