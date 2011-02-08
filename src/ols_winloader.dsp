@@ -53,7 +53,11 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /machine:I386
-# ADD LINK32 shell32.lib /nologo /subsystem:windows /map /machine:I386
+# ADD LINK32 /nologo /subsystem:windows /map /machine:I386
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=copy Release\ols_winloader.exe ..
+# End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "ols_winloader - Win32 Debug"
 
@@ -80,6 +84,10 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
 # ADD LINK32 /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=copy Debug\ols_winloader.exe ..
+# End Special Build Tool
 
 !ENDIF 
 
@@ -90,10 +98,6 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
-# Begin Source File
-
-SOURCE=.\2PassScaleEx.cpp
-# End Source File
 # Begin Source File
 
 SOURCE=.\AboutDlg.cpp
@@ -148,6 +152,10 @@ SOURCE=.\ols_winloaderDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\pic_bootloader.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\serial.cpp
 # End Source File
 # Begin Source File
@@ -165,10 +173,6 @@ SOURCE=.\VisualStylesXP.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\2PassScaleEx.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\AboutDlg.h
 # End Source File
 # Begin Source File
@@ -178,6 +182,10 @@ SOURCE=.\AdvancedDialog.h
 # Begin Source File
 
 SOURCE=.\Bitmap_Helper.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\boot_if.h
 # End Source File
 # Begin Source File
 
@@ -214,6 +222,10 @@ SOURCE=.\ols_winloader.h
 # Begin Source File
 
 SOURCE=.\ols_winloaderDlg.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\pic_bootloader.h
 # End Source File
 # Begin Source File
 

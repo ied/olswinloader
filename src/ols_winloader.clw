@@ -14,8 +14,8 @@ Class2=CWinLoaderApp
 Class3=CWinLoaderDialog
 
 ResourceCount=3
-Resource1=IDD_ABOUTBOX
-Resource2=IDD_OLS_WINLOADER_DIALOG
+Resource1=IDD_OLS_WINLOADER_DIALOG
+Resource2=IDD_ABOUTBOX
 Class4=CAdvancedDialog
 Resource3=IDD_ADVANCED_DIALOG
 
@@ -24,6 +24,9 @@ Type=0
 BaseClass=CDialog
 HeaderFile=AboutDlg.h
 ImplementationFile=AboutDlg.cpp
+Filter=D
+VirtualFilter=dWC
+LastObject=IDC_STATIC_ICON
 
 [CLS:CWinLoaderApp]
 Type=0
@@ -36,20 +39,21 @@ Type=0
 BaseClass=CDialog
 HeaderFile=ols_winloaderDlg.h
 ImplementationFile=ols_winloaderDlg.cpp
-LastObject=IDADVANCE
+LastObject=CWinLoaderDialog
 Filter=D
 VirtualFilter=dWC
 
 [DLG:IDD_ABOUTBOX]
 Type=1
 Class=CAboutDlg
-ControlCount=6
-Control1=IDC_STATIC_ICON,static,1342177283
+ControlCount=7
+Control1=IDC_STATIC_ICON,static,1342177539
 Control2=IDC_STATIC,static,1342308480
 Control3=IDOK,button,1342373889
-Control4=IDC_STATIC,static,1342308480
+Control4=IDC_LINKS,static,1342308480
 Control5=IDC_STATIC,static,1342308480
 Control6=IDC_STATIC,static,1342308480
+Control7=IDC_STATIC,static,1342308480
 
 [DLG:IDD_OLS_WINLOADER_DIALOG]
 Type=1

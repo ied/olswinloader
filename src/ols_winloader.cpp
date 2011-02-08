@@ -83,7 +83,7 @@ BOOL CWinLoaderApp::InitInstance()
 	Enable3dControlsStatic();	// Call this when linking to MFC statically
 #endif
 
-  // Setup INI filename in user's "Applicate Data" folder...
+  // Setup INI filename in user's "Application Data" folder...
   TCHAR appdata[4096];
   SHGetFolderPath(NULL,CSIDL_APPDATA,NULL,SHGFP_TYPE_CURRENT,appdata);
   CString temp(appdata);

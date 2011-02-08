@@ -10,7 +10,7 @@
 //
 #include "stdafx.h"
 #include "Bitmap_Helper.h"
-#include "2PassScaleEx.h"
+//#include "2PassScaleEx.h"
 
 #include "ols_winloader.h"
 
@@ -333,7 +333,7 @@ bool GetBitmapPixels(
     delete [] image_dib;
     return false;
   }
-
+/*
   //
   // Scale DIB if necessary...
   //
@@ -373,7 +373,7 @@ bool GetBitmapPixels(
     image_dib = scale_image_dib;
     bytesperline = dest_byte_size;
   }
-
+*/
   if (dib_ptr) *dib_ptr = image_dib;
   if (pixel_ptr) *pixel_ptr = pixels;
   if (pixels_bytesperline) *pixels_bytesperline = bytesperline;

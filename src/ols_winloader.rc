@@ -73,27 +73,29 @@ IDR_MAINFRAME           ICON    DISCARDABLE     "res\\ols_winloader.ico"
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 252, 148
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 252, 159
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About Logic Sniffer FPGA Image Loader"
+CAPTION "About Logic Sniffer Image Loader"
 FONT 8, "MS Sans Serif"
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC_ICON,11,12,20,20
-    LTEXT           "Open Logic Sniffer FPGA Image Loader - Version 1.02",
+    ICON            IDR_MAINFRAME,IDC_STATIC_ICON,11,12,20,20,SS_NOTIFY
+    LTEXT           "Open Logic Sniffer Image Loader - Version 2.01",
                     IDC_STATIC,52,10,193,8,SS_NOPREFIX
-    DEFPUSHBUTTON   "OK",IDOK,100,122,50,14,WS_GROUP
-    LTEXT           "For more information see:\n   http://dangerousprototypes.com/open-logic-sniffer\n   http://www.gadgetfactory.net/gf/project/bufferflylogic",
-                    IDC_STATIC,52,42,193,31,SS_NOPREFIX
-    LTEXT           "Some portions may embody copyrights of the following:\n   © 2010 Michal Demin - FPGA Image Loader\n   © 1998-2010 PJ Naughter - Serial Enumerator\n   © 1999 Eran Yariv - Two Pass Image Scaler\n   © 2001-2002 David Yuheng Zhao - Visual Themes",
-                    IDC_STATIC,52,73,193,44,SS_NOPREFIX
+    DEFPUSHBUTTON   "OK",IDOK,100,136,50,14,WS_GROUP
+    LTEXT           "For more information see:\n   http://dangerousprototypes.com/open-logic-sniffer\n   http://www.gadgetfactory.net/gf/project/bufferflylogic\n   http://www.mygizmos.org/ols",
+                    IDC_LINKS,52,40,193,34,SS_NOPREFIX
+    LTEXT           "   © 2010 Diolan - PIC Bootloader\n   © 2010 Michal Demin - FPGA Image Loader\n   © 1998-2010 PJ Naughter - Serial Enumerator\n   © 1999 Eran Yariv - Two Pass Image Scaler\n   © 2001-2002 David Yuheng Zhao - Visual Themes",
+                    IDC_STATIC,52,88,193,42,SS_NOPREFIX
     LTEXT           "Copyright © 2011 by Ian Davis\nThis software is released under the GNU GPL2.",
                     IDC_STATIC,52,18,193,16,SS_NOPREFIX
+    LTEXT           "Some portions may embody copyrights of the following:",
+                    IDC_STATIC,52,78,193,8,SS_NOPREFIX
 END
 
 IDD_OLS_WINLOADER_DIALOG DIALOGEX 0, 0, 320, 220
 STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
-CAPTION "Logic Sniffer FPGA Image Loader"
+CAPTION "Logic Sniffer Image Loader"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     LISTBOX         IDC_ANALYZERPORT_LIST,69,52,205,34,LBS_SORT | 
@@ -102,23 +104,23 @@ BEGIN
     EDITTEXT        IDC_IMAGEFILE,69,95,205,14,ES_AUTOHSCROLL
     CONTROL         "",IDC_REFRESH,"Button",BS_OWNERDRAW | WS_TABSTOP,284,53,
                     17,15
-    PUSHBUTTON      "...",IDC_BROWSE,284,95,17,14
+    PUSHBUTTON      "...",IDC_BROWSE,284,95,17,15
     CONTROL         "OK",IDOK,"Button",BS_OWNERDRAW | WS_TABSTOP,51,187,65,
                     18
     CONTROL         "Cancel",IDCANCEL,"Button",BS_OWNERDRAW | WS_TABSTOP,127,
                     187,65,18
     PUSHBUTTON      "Close",IDCLOSE,132,187,55,18,NOT WS_VISIBLE
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,17,14,285,24
-    CTEXT           "Write a new FPGA image into the Open Logic Sniffer Flash ROM.",
-                    IDC_STATIC,37,18,244,16,SS_CENTERIMAGE
+    CTEXT           "Write a new image into the Open Logic Sniffer FPGA Flash ROM or PIC firmware.",
+                    IDC_STATIC,19,18,282,16,SS_CENTERIMAGE
     RTEXT           "Analyzer Port:",IDC_STATIC,3,53,62,14,SS_CENTERIMAGE
     RTEXT           "Image File:",IDC_STATIC,3,94,62,14,SS_CENTERIMAGE
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME,17,124,285,48
-    LTEXT           "Instructions:\n    Select port your OLS is connected to and the FPGA image file to upload.\n    On OLS, hold down UPDATE button while pressing && releasing RESET button.\n    Click OK below to begin upload.",
+    LTEXT           "Instructions:\n    Select port your OLS is connected to and the image file to upload.\n    On OLS, hold down UPDATE button while pressing && releasing RESET button.\n    Click OK below to begin upload.",
                     IDC_STATIC_HELP,27,131,264,34
     CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",NOT 
                     WS_VISIBLE | WS_BORDER,37,141,244,14
-    LTEXT           "Status",IDC_STATUS,37,131,244,8,NOT WS_VISIBLE
+    LTEXT           "Status",IDC_STATUS,37,131,263,8,NOT WS_VISIBLE
     CTEXT           "Status",IDC_STATUS2,37,159,244,8,SS_CENTERIMAGE | NOT 
                     WS_VISIBLE
     CONTROL         "Advanced",IDADVANCE,"Button",BS_OWNERDRAW | WS_TABSTOP,
@@ -127,17 +129,17 @@ END
 
 IDD_ADVANCED_DIALOG DIALOG DISCARDABLE  0, 0, 294, 190
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Advanced OLS Loader Options"
+CAPTION "Advanced Image Loader Options"
 FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,48,161,55,16
     PUSHBUTTON      "Cancel",IDCANCEL,119,161,55,16
-    CONTROL         "Backup old FPGA ROM image before writing new one",
+    CONTROL         "Backup old FPGA image or PIC firmware before writing new one",
                     IDC_BACKUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,59,
-                    185,10
-    CONTROL         "Do not erase FPGA before writing (not recommended)",
+                    216,10
+    CONTROL         "Do not erase FPGA/PIC before writing (not recommended)",
                     IDC_NOERASE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,72,
-                    184,10
+                    199,10
     CONTROL         "Query OLS status before writing",IDC_OLSSTATUS,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,35,85,115,10
     CONTROL         "Enter run mode after finishing upload",IDC_RUNMODE,
@@ -164,8 +166,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,2,0
- PRODUCTVERSION 1,0,2,0
+ FILEVERSION 2,0,1,0
+ PRODUCTVERSION 2,0,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -182,15 +184,15 @@ BEGIN
         BEGIN
             VALUE "Comments", "This software is released under the GNU GPL2.\0"
             VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "Open Logic Sniffer Windows FPGA Image Loader\0"
-            VALUE "FileVersion", "1, 0, 2, 0\0"
+            VALUE "FileDescription", "Open Logic Sniffer Windows Image Loader\0"
+            VALUE "FileVersion", "2, 0, 1, 0\0"
             VALUE "InternalName", "ols_winloader\0"
-            VALUE "LegalCopyright", "Copyright (C) 2011 Ian Davis\0"
+            VALUE "LegalCopyright", "Copyright © 2011 Ian Davis\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "ols_winloader.EXE\0"
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Open Logic Sniffer Windows FPGA Image Loader\0"
-            VALUE "ProductVersion", "1, 0, 2, 0\0"
+            VALUE "ProductName", "Open Logic Sniffer Windows Image Loader\0"
+            VALUE "ProductVersion", "2, 0, 1, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
@@ -216,7 +218,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 245
         TOPMARGIN, 7
-        BOTTOMMARGIN, 141
+        BOTTOMMARGIN, 152
     END
 
     IDD_OLS_WINLOADER_DIALOG, DIALOG
@@ -267,10 +269,10 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDR_FPGAHEXFILE         "\nNewSkit\nFPGA Image File\nFPGA HEX Image Files (*.hex)\n.hex\nImageHEXFile\nFPGA HEX Image File"
-    IDR_FPGABINFILE         "\nNewSkit\nFPGA Binary Image File\nFPGA Binary Image Files (*.bin)\n.bin\nImageBINFile\nFPGA Binary Image File"
-    IDR_FPGABITFILE         "\nNewSkit\nFPGA BIT Image File\nFPGA BIT Image Files (*.bit)\n.bit\nImageBITFile\nFPGA BIT Image File"
-    IDR_FPGAMCSFILE         "\nNewSkit\nFPGA Image File\nFPGA MCS Hex Image Files (*.mcs)\n.mcs\nImageMCSFile\nFPGA MCS Hex Image File"
+    IDR_HEXFILE             "\nNewSkit\nOLS Image File\nHEX Image Files (*.hex)\n.hex\nImageHEXFile\nHEX Image File"
+    IDR_BINFILE             "\nNewSkit\nOLS Binary Image File\nBinary Image Files (*.bin)\n.bin\nImageBINFile\nBinary Image File"
+    IDR_BITFILE             "\nNewSkit\nOLS BIT Image File\nBIT Image Files (*.bit)\n.bit\nImageBITFile\nBIT Image File"
+    IDR_MCSFILE             "\nNewSkit\nOLS Image File\nMCS Hex Image Files (*.mcs)\n.mcs\nImageMCSFile\nMCS Hex Image File"
 END
 
 #endif    // English (U.S.) resources

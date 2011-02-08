@@ -159,12 +159,12 @@ void CFileNameDialogEx::Init(
   else m_parent_hWnd = pParentWnd->GetSafeHwnd();
 
   // Copy default filename if given...
-  if (lpszFileName) strcpy (m_szFile, lpszFileName);
+  if (lpszFileName) lstrcpy (m_szFile, lpszFileName);
 
   // Get current folder if initial folder not specified...
   if (initial_dir==NULL)
     ::GetCurrentDirectory((sizeof(m_szCurDir)/sizeof(m_szCurDir[0]))-1,m_szCurDir);
-  else strcpy (m_szCurDir,initial_dir);
+  else lstrcpy (m_szCurDir,initial_dir);
 
   // Setup OFN info.  If available & requested, use larger structure
   // so ComCtl32 shows Win2k/XP places bar...
@@ -243,7 +243,7 @@ int CFileNameDialogEx::DoModal()
   // See if default filename matches any of filters...
   TCHAR fileext[MAX_PATH];
   _splitpath(m_ofn.lpstrFile,NULL,NULL,NULL,fileext);
-  int fileextlen = strlen(fileext);
+  int fileextlen = lstrlen(fileext);
   if (fileextlen>0) {
     CString filterext;
     bool done=false;
@@ -287,7 +287,7 @@ void CFileNameDialogEx::CenterWindow()
     int height = rc.Height();
     int x = rp.left + (rp.Width() - width)/2;
     int y = rp.top + (rp.Height() - height)/2;
-
+/*
     MONITORINFO mi;
     mi.cbSize = sizeof(mi);
     if (GetMonitorInfo(MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST), &mi)) {
@@ -295,7 +295,7 @@ void CFileNameDialogEx::CenterWindow()
       if ((x+width)>desktop_rc.right) x = desktop_rc.right-width;
       if ((y+height)>desktop_rc.bottom) y = desktop_rc.bottom-height;
     }
-
+*/
     if (x<0) x = 0;
     if (y<0) y = 0;
 
@@ -334,7 +334,7 @@ CString CFileNameDialogEx::UpdateFileExt(const char *target)
     int count=0;
     bool anyquote=false;
     enum {IDLE,INQUOTE,INFILE} state = IDLE;
-    int targetlen = strlen(target);
+    int targetlen = lstrlen(target);
     for (int i=0; i<targetlen; i++)
       switch (state) {
         case IDLE :

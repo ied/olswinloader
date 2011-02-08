@@ -6,6 +6,8 @@
 #if !defined(AFX_STDAFX_H__0F10237C_3BCB_4484_A91D_2763EE435B4C__INCLUDED_)
 #define AFX_STDAFX_H__0F10237C_3BCB_4484_A91D_2763EE435B4C__INCLUDED_
 
+#ifdef WIN32
+
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -32,5 +34,7 @@ typedef unsigned int uint32_t;
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
+
+#endif // WIN32
 
 #endif // !defined(AFX_STDAFX_H__0F10237C_3BCB_4484_A91D_2763EE435B4C__INCLUDED_)

@@ -8,6 +8,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include "pic_bootloader.h"
 #include "enumser.h"
 #include "ButtonVE_Image.h"
 
@@ -31,12 +32,17 @@ public:
   int m_port_speed;
   const TCHAR *m_flashid_name;
 
-	bool m_backup_fpga; //
-	bool m_ignore_flashrom_jedec; //
-	bool m_noerase_flashrom; //
-	bool m_query_ols_status; //
-	bool m_run_after_upload; //
-	bool m_selftest; //
+	bool m_backup_fpga; 
+	bool m_ignore_flashrom_jedec; 
+	bool m_noerase_flashrom; 
+	bool m_query_ols_status; 
+	bool m_run_after_upload; 
+	bool m_selftest; 
+  bool m_alternate_intro;
+  enum {UPLOAD_FPGA,UPLOAD_PIC} m_upload_mode;
+  bool m_update_mode_force;
+
+  boot_rsp_get_fw_ver m_bootloader_version;
 
   CEnumerateSerial m_portlist;
   int m_portlist_comwidth; // pixel width of widest COM port label (ie: "COM12")
@@ -45,6 +51,7 @@ public:
 
   // Operations...
   void UpdateOKButton();
+  bool CheckBootloaderMode();
 
   // Worker thread handler...
   bool CheckUserAbort(int tenths);

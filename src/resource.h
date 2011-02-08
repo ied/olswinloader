@@ -9,11 +9,11 @@
 #define IDS_ABOUTBOX                    101
 #define IDD_OLS_WINLOADER_DIALOG        102
 #define IDR_MAINFRAME                   128
-#define IDR_FPGAHEXFILE                 129
-#define IDR_FPGABINFILE                 130
-#define IDR_FPGABITFILE                 131
-#define IDB_REFRESH                     132
-#define IDR_FPGAMCSFILE                 132
+#define IDR_HEXFILE                     129
+#define IDR_BINFILE                     130
+#define IDR_BITFILE                     131
+#define IDR_MCSFILE                     132
+#define IDB_REFRESH                     133
 #define IDD_ADVANCED_DIALOG             134
 #define IDB_START                       135
 #define IDB_ADVANCED                    136
@@ -34,6 +34,8 @@
 #define IDC_SELFTEST                    1015
 #define IDC_IGNOREJEDIC                 1016
 #define IDC_PORTSPEED                   1017
+#define IDC_LINKS                       1020
+#define IDC_TABCTRL                     1021
 
 // Next default values for new objects
 // 
@@ -41,7 +43,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        137
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1020
+#define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

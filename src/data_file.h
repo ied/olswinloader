@@ -13,7 +13,8 @@
 #ifndef DATA_FILE_H_
 #define DATA_FILE_H_
 
-#ifndef WIN32
+#ifdef WIN32
+#else
 #include <stdint.h>
 #endif
 

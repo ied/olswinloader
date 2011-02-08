@@ -39,6 +39,7 @@
 #include "Misc.h"
 
 #include "ols.h"
+#include "pic_bootloader.h"
 #include "serial.h"
 #include "data_file.h"
 
@@ -61,50 +62,68 @@ CString g_known_devices[] = {
 // List of known file type resource ID's...
 //
 int g_fpgafiletypes[] = {
-  IDR_FPGAHEXFILE,
-  IDR_FPGAMCSFILE,
-  IDR_FPGABINFILE,
-  IDR_FPGABITFILE,
+  IDR_HEXFILE,
+  IDR_MCSFILE,
+  IDR_BINFILE,
+  IDR_BITFILE,
   -1};
 
 
 //
 // Local defines...
 //
-#define BACKUP_FILENAME "OLS_FPGAROM_BACKUP"
+#define FPGA_BACKUP_FILENAME "OLS_FPGAROM_BACKUP"
+#define PIC_BACKUP_FILENAME "OLS_PICFIRMWARE_BACKUP"
 #define PORTLIST_COLUMNS_MARGIN 10
 #define OLS_UPLOAD_STATUS WM_USER+100
 
-#define OLS_WORKERSTATUS_BADPORT            1
-#define OLS_WORKERSTATUS_BADSPEED           2
-#define OLS_WORKERSTATUS_QUERYID            3
-#define OLS_WORKERSTATUS_BADOLSID           4
-#define OLS_WORKERSTATUS_JEDIC_READFAIL     5
-#define OLS_WORKERSTATUS_JEDIC_UNKNOWN      6
-#define OLS_WORKERSTATUS_JEDIC_VALID        7
-#define OLS_WORKERSTATUS_OLSSTATUS_READFAIL 8
-#define OLS_WORKERSTATUS_OLSSTATUS_VALID    9
-#define OLS_WORKERSTATUS_SELFTEST           10
-#define OLS_WORKERSTATUS_SELFTESTFAIL       11
-#define OLS_WORKERSTATUS_BADBUFFER          12
-#define OLS_WORKERSTATUS_READROM            13
-#define OLS_WORKERSTATUS_READROMFAIL        14
-#define OLS_WORKERSTATUS_WRITEFILE          15
-#define OLS_WORKERSTATUS_WRITEFILEFAIL      16
-#define OLS_WORKERSTATUS_READFILE           17
-#define OLS_WORKERSTATUS_READFILEFAIL       18
-#define OLS_WORKERSTATUS_COUNTDOWN          19
-#define OLS_WORKERSTATUS_ERASEROM           20
-#define OLS_WORKERSTATUS_ERASEFAIL          21
-#define OLS_WORKERSTATUS_WRITEROM           22
-#define OLS_WORKERSTATUS_WRITEROMFAIL       23
-#define OLS_WORKERSTATUS_RUNOK              24
-#define OLS_WORKERSTATUS_RUNFAIL            25
-#define OLS_WORKERSTATUS_CANCEL             26
-
+#define OLS_WORKERSTATUS_BADPORT                1
+#define OLS_WORKERSTATUS_BADSPEED               2
+#define OLS_WORKERSTATUS_QUERYID                3
+#define OLS_WORKERSTATUS_BADOLSID               4
+#define OLS_WORKERSTATUS_JEDIC_READFAIL         5
+#define OLS_WORKERSTATUS_JEDIC_UNKNOWN          6
+#define OLS_WORKERSTATUS_JEDIC_VALID            7
+#define OLS_WORKERSTATUS_OLSSTATUS_READFAIL     8
+#define OLS_WORKERSTATUS_OLSSTATUS_VALID        9
+#define OLS_WORKERSTATUS_SELFTEST               10
+#define OLS_WORKERSTATUS_SELFTESTFAIL           11
+#define OLS_WORKERSTATUS_BADBUFFER              12
+#define OLS_WORKERSTATUS_READROM                13
+#define OLS_WORKERSTATUS_READROMFAIL            14
+#define OLS_WORKERSTATUS_FPGA_WRITEFILE         15
+#define OLS_WORKERSTATUS_FPGA_WRITEFILE_FAIL    16
+#define OLS_WORKERSTATUS_FPGA_WRITEFILE_SUCCESS 17
+#define OLS_WORKERSTATUS_READFILE               18
+#define OLS_WORKERSTATUS_READFILEFAIL           19
+#define OLS_WORKERSTATUS_COUNTDOWN              20
+#define OLS_WORKERSTATUS_FPGA_ERASEROM          21
+#define OLS_WORKERSTATUS_FPGA_ERASEFAIL         22
+#define OLS_WORKERSTATUS_WRITEROM               23
+#define OLS_WORKERSTATUS_WRITEROMFAIL           24
+#define OLS_WORKERSTATUS_RUNOK                  25
+#define OLS_WORKERSTATUS_RUNFAIL                26
+#define OLS_WORKERSTATUS_CANCEL                 27
+#define OLS_WORKERSTATUS_BOOTLOADER_SWITCH      28
+#define OLS_WORKERSTATUS_BOOTLOADER_FAILED      29
+#define OLS_WORKERSTATUS_BOOTLOADER_SUCCESS     30
+#define OLS_WORKERSTATUS_READPIC                31
+#define OLS_WORKERSTATUS_READPIC_FAIL           32
+#define OLS_WORKERSTATUS_PIC_WRITEFILE_FAIL     33
+#define OLS_WORKERSTATUS_PIC_WRITEFILE_SUCCESS  34
+#define OLS_WORKERSTATUS_PIC_ERASEROM           35
+#define OLS_WORKERSTATUS_PIC_ERASEFAIL          36
+#define OLS_WORKERSTATUS_WRITEPIC               37
+#define OLS_WORKERSTATUS_WRITEPIC_FAIL          38
+#define OLS_WORKERSTATUS_VERIFYPIC              39
+#define OLS_WORKERSTATUS_VERIFYPIC_FAIL         40
 
 //
 // Command line parameters...
+//
+// To batch together, 
+//    ols_winloader -E -J -NORUN fpga_image.bit
+//    ols_winloader -INTRO pic_firmware.hex
 //
 #define PARAM_PORTNUM       0
 #define PARAM_PORTSPEED     1
@@ -115,10 +134,13 @@ int g_fpgafiletypes[] = {
 #define PARAM_QUERYSTATUS   6
 #define PARAM_NOQUERYSTATUS 7
 #define PARAM_IGNOREJEDIC   8
-#define PARAM_RUNAFTER      9
-#define PARAM_NORUN         10
-#define PARAM_SELFTEST      11
-#define PARAM_NOSELFTEST    12
+#define PARAM_CHECKJEDIC    9
+#define PARAM_RUNAFTER      10
+#define PARAM_NORUN         11
+#define PARAM_SELFTEST      12
+#define PARAM_NOSELFTEST    13
+#define PARAM_INTRO         14
+#define PARAM_DEFAULTS      15
 
 strtabletype g_paramtable[] = {
   {"-P", PARAM_PORTNUM},     {"-PORT", PARAM_PORTNUM},
@@ -132,19 +154,22 @@ strtabletype g_paramtable[] = {
   {"-Q", PARAM_QUERYSTATUS}, {"-QUERY", PARAM_QUERYSTATUS}, {"-STATUS", PARAM_QUERYSTATUS},
   {"-NQ", PARAM_NOQUERYSTATUS}, {"-NOQUERY", PARAM_NOQUERYSTATUS}, {"-NOSTATUS", PARAM_NOQUERYSTATUS},
   {"-I", PARAM_IGNOREJEDIC}, {"-IGNORE", PARAM_IGNOREJEDIC}, {"-IGNORE_JEDIC", PARAM_IGNOREJEDIC},
-  {"-RUN",      PARAM_RUNAFTER},
-  {"-NORUN",    PARAM_NORUN},
+  {"-J", PARAM_CHECKJEDIC},  {"-JEDIC", PARAM_CHECKJEDIC},
+  {"-D", PARAM_DEFAULTS},    {"-DEFAULTS", PARAM_DEFAULTS},
+  {"-RUN", PARAM_RUNAFTER},
+  {"-NORUN", PARAM_NORUN},
   {"-SELFTEST", PARAM_SELFTEST},
-  {"-NOTEST", PARAM_NOSELFTEST}, {"-NOSELFTEST", PARAM_NOSELFTEST},
+  {"-NOTEST", PARAM_NOSELFTEST}, 
+  {"-NOSELFTEST", PARAM_NOSELFTEST},
+  {"-INTRO", PARAM_INTRO},
   {"",-1}};
 
 
 /////////////////////////////////////////////////////////////////////////////
 // CWinLoaderDialog dialog
 
-
 CWinLoaderDialog::CWinLoaderDialog(CWnd* pParent /*=NULL*/)
-	: CDialog(CWinLoaderDialog::IDD, pParent)
+  : CDialog(CWinLoaderDialog::IDD, pParent)
 {
   m_flashid_name = NULL;
   m_cancel_worker = false;
@@ -155,53 +180,56 @@ CWinLoaderDialog::CWinLoaderDialog(CWnd* pParent /*=NULL*/)
   OnRefreshPortList();
 
   m_port_speed = B921600;
-	m_backup_fpga = false;
-	m_ignore_flashrom_jedec = false;
-	m_noerase_flashrom = false;
-	m_query_ols_status = false;
-	m_run_after_upload = true;
-	m_selftest = true;
+  m_backup_fpga = false;
+  m_ignore_flashrom_jedec = false;
+  m_noerase_flashrom = false;
+  m_query_ols_status = false;
+  m_run_after_upload = true;
+  m_selftest = true;
+  m_upload_mode = UPLOAD_FPGA;
+  m_update_mode_force = false;
 
-	//{{AFX_DATA_INIT(CWinLoaderDialog)
+  //{{AFX_DATA_INIT(CWinLoaderDialog)
 	//}}AFX_DATA_INIT
-	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+  // Note that LoadIcon does not require a subsequent DestroyIcon in Win32
+  m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
 void CWinLoaderDialog::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CWinLoaderDialog)
-	DDX_Control(pDX, IDADVANCE, m_advanced_button);
-	DDX_Control(pDX, IDC_REFRESH, m_refresh_button);
-	DDX_Control(pDX, IDC_STATUS2, m_status2);
-	DDX_Control(pDX, IDC_STATUS, m_status);
-	DDX_Control(pDX, IDC_ANALYZERPORT_LIST, m_analyzerport_list);
-	DDX_Control(pDX, IDC_IMAGEFILE, m_imagefile);
-	DDX_Control(pDX, IDC_BROWSE, m_browse_button);
-	DDX_Control(pDX, IDOK, m_ok_button);
-	DDX_Control(pDX, IDCANCEL, m_cancel_button);
-	DDX_Control(pDX, IDCLOSE, m_close_button);
-	DDX_Control(pDX, IDC_STATIC_HELP, m_instructions);
-	DDX_Control(pDX, IDC_PROGRESS, m_progress);
+  CDialog::DoDataExchange(pDX);
+  //{{AFX_DATA_MAP(CWinLoaderDialog)
+  DDX_Control(pDX, IDADVANCE, m_advanced_button);
+  DDX_Control(pDX, IDC_REFRESH, m_refresh_button);
+  DDX_Control(pDX, IDC_STATUS2, m_status2);
+  DDX_Control(pDX, IDC_STATUS, m_status);
+  DDX_Control(pDX, IDC_ANALYZERPORT_LIST, m_analyzerport_list);
+  DDX_Control(pDX, IDC_IMAGEFILE, m_imagefile);
+  DDX_Control(pDX, IDC_BROWSE, m_browse_button);
+  DDX_Control(pDX, IDOK, m_ok_button);
+  DDX_Control(pDX, IDCANCEL, m_cancel_button);
+  DDX_Control(pDX, IDCLOSE, m_close_button);
+  DDX_Control(pDX, IDC_STATIC_HELP, m_instructions);
+  DDX_Control(pDX, IDC_PROGRESS, m_progress);
 	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(CWinLoaderDialog, CDialog)
-	//{{AFX_MSG_MAP(CWinLoaderDialog)
-	ON_WM_SYSCOMMAND()
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDCLOSE, OnClose)
-	ON_WM_DRAWITEM()
-	ON_WM_MEASUREITEM()
-	ON_BN_CLICKED(IDC_BROWSE, OnBrowse)
-	ON_BN_CLICKED(IDC_REFRESH, OnRefreshPortList)
-	ON_EN_UPDATE(IDC_IMAGEFILE, OnUpdateImagefile)
-	ON_LBN_SELCHANGE(IDC_ANALYZERPORT_LIST, OnSelchangeAnalyzerportList)
-	ON_BN_CLICKED(IDADVANCE, OnAdvance)
-	//}}AFX_MSG_MAP
+  //{{AFX_MSG_MAP(CWinLoaderDialog)
+  ON_WM_SYSCOMMAND()
+  ON_WM_PAINT()
+  ON_WM_QUERYDRAGICON()
+  ON_BN_CLICKED(IDCLOSE, OnClose)
+  ON_WM_DRAWITEM()
+  ON_WM_MEASUREITEM()
+  ON_BN_CLICKED(IDC_BROWSE, OnBrowse)
+  ON_BN_CLICKED(IDC_REFRESH, OnRefreshPortList)
+  ON_EN_UPDATE(IDC_IMAGEFILE, OnUpdateImagefile)
+  ON_LBN_SELCHANGE(IDC_ANALYZERPORT_LIST, OnSelchangeAnalyzerportList)
+  ON_BN_CLICKED(IDADVANCE, OnAdvance)
+  //}}AFX_MSG_MAP
   ON_MESSAGE(OLS_UPLOAD_STATUS, OnUploadStatus)
+  ON_MESSAGE(WM_PICBOOTLOADER_STATUS, OnUploadStatus)
 END_MESSAGE_MAP()
 
 
@@ -211,44 +239,44 @@ END_MESSAGE_MAP()
 BOOL CWinLoaderDialog::PreTranslateMessage(MSG* pMsg) 
 {
   if (m_pToolTip) m_pToolTip->RelayEvent(pMsg);
-	return CDialog::PreTranslateMessage(pMsg);
+  return CDialog::PreTranslateMessage(pMsg);
 }
 
 
 BOOL CWinLoaderDialog::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+  CDialog::OnInitDialog();
 
-	// Add "About..." menu item to system menu.
+  // Add "About..." menu item to system menu.
 
-	// IDM_ABOUTBOX must be in the system command range.
-	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
-	ASSERT(IDM_ABOUTBOX < 0xF000);
+  // IDM_ABOUTBOX must be in the system command range.
+  ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
+  ASSERT(IDM_ABOUTBOX < 0xF000);
 
-	CMenu* pSysMenu = GetSystemMenu(FALSE);
-	if (pSysMenu != NULL)
-	{
-		CString strAboutMenu;
-		strAboutMenu.LoadString(IDS_ABOUTBOX);
-		if (!strAboutMenu.IsEmpty())
-		{
-			pSysMenu->AppendMenu(MF_SEPARATOR);
-			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
-		}
-	}
+  CMenu* pSysMenu = GetSystemMenu(FALSE);
+  if (pSysMenu != NULL)
+  {
+    CString strAboutMenu;
+    strAboutMenu.LoadString(IDS_ABOUTBOX);
+    if (!strAboutMenu.IsEmpty())
+    {
+      pSysMenu->AppendMenu(MF_SEPARATOR);
+      pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+    }
+  }
 
-	// Set the icon for this dialog.  The framework does this automatically
-	//  when the application's main window is not a dialog
-	SetIcon(m_hIcon, TRUE);			// Set big icon
-	SetIcon(m_hIcon, FALSE);		// Set small icon
+  // Set the icon for this dialog.  The framework does this automatically
+  //  when the application's main window is not a dialog
+  SetIcon(m_hIcon, TRUE);      // Set big icon
+  SetIcon(m_hIcon, FALSE);    // Set small icon
 
   // Create tool tips...
   m_pToolTip = new CToolTipCtrl;
   if (m_pToolTip->Create(this)) {
     m_pToolTip->AddTool(&m_refresh_button,_T("Refresh Port List"));
-    m_pToolTip->AddTool(&m_browse_button,_T("Browse for FPGA image file"));
+    m_pToolTip->AddTool(&m_browse_button,_T("Browse for FPGA image or PIC firmware file"));
     m_pToolTip->AddTool(&m_advanced_button,_T("Advanced Configuration Options"));
-    m_pToolTip->AddTool(&m_ok_button,_T("Start FPGA Image Upload"));
+    m_pToolTip->AddTool(&m_ok_button,_T("Start Image Upload"));
   }
   
   // Setup button images...
@@ -276,13 +304,14 @@ BOOL CWinLoaderDialog::OnInitDialog()
   // Get defaults from INI file...
   m_target_file = theApp.GetProfileString(INI_SECTION,"TargetFile","");
   m_target_portnum = theApp.GetProfileInt(INI_SECTION,"TargetPort",-1);
-	m_port_speed = theApp.GetProfileInt(INI_SECTION,"PortSpeed",B921600);
-	m_backup_fpga = theApp.GetProfileInt(INI_SECTION,"BackupFPGA",false)>0;
-	m_ignore_flashrom_jedec = theApp.GetProfileInt(INI_SECTION,"IgnoreFlashROMJedec",false)>0;
-	m_noerase_flashrom = theApp.GetProfileInt(INI_SECTION,"NoEraseFlashROM",false)>0;
-	m_query_ols_status = theApp.GetProfileInt(INI_SECTION,"QueryOLSStatus",false)>0;
-	m_run_after_upload = theApp.GetProfileInt(INI_SECTION,"RunAfterUpload",true)>0;
-	m_selftest = theApp.GetProfileInt(INI_SECTION,"PerformSelfTest",true)>0;
+  m_port_speed = theApp.GetProfileInt(INI_SECTION,"PortSpeed",B921600);
+  m_backup_fpga = theApp.GetProfileInt(INI_SECTION,"BackupFPGA",false)>0;
+  m_ignore_flashrom_jedec = theApp.GetProfileInt(INI_SECTION,"IgnoreFlashROMJedec",false)>0;
+  m_noerase_flashrom = theApp.GetProfileInt(INI_SECTION,"NoEraseFlashROM",false)>0;
+  m_query_ols_status = theApp.GetProfileInt(INI_SECTION,"QueryOLSStatus",false)>0;
+  m_run_after_upload = theApp.GetProfileInt(INI_SECTION,"RunAfterUpload",true)>0;
+  m_selftest = theApp.GetProfileInt(INI_SECTION,"PerformSelfTest",true)>0;
+  m_alternate_intro = false;
 
   // Parse command line options...
   for (int aindex = 1; aindex < __argc; aindex++) {
@@ -298,10 +327,22 @@ BOOL CWinLoaderDialog::OnInitDialog()
         case PARAM_QUERYSTATUS : m_query_ols_status = true; break; 
         case PARAM_NOQUERYSTATUS : m_query_ols_status = false; break; 
         case PARAM_IGNOREJEDIC : m_ignore_flashrom_jedec = true; break;
+        case PARAM_CHECKJEDIC : m_ignore_flashrom_jedec = false; break;
         case PARAM_RUNAFTER : m_run_after_upload = true; break; 
         case PARAM_NORUN : m_run_after_upload = false; break; 
         case PARAM_SELFTEST : m_selftest = true; break;
         case PARAM_NOSELFTEST : m_selftest = false; break;
+        case PARAM_INTRO : m_alternate_intro = true; break;
+        case PARAM_DEFAULTS : {
+          m_port_speed = B921600;
+          m_backup_fpga = false;
+          m_ignore_flashrom_jedec = false;
+          m_noerase_flashrom = false;
+          m_query_ols_status = false;
+          m_run_after_upload = true;
+          m_selftest = true;
+          break;
+        }
       }
     }
     else if (FileExists(temp)) { // filename?
@@ -319,33 +360,46 @@ BOOL CWinLoaderDialog::OnInitDialog()
   }
 
   m_imagefile.SetWindowText(m_target_file);
+  m_imagefile.SetSel(m_target_file.GetLength(),-1);
 
-/*
-  // Init tab control...
-  m_tab.InsertItem(0,"Write Flash ROM");
-  m_tab.InsertItem(1,"Read Flash ROM");
-  m_tab.InsertItem(2,"Self Test");
-*/
   // Init the port list...
   OnRefreshPortList();
 
   // Enable/disable OK button depending on selections...
   OnUpdateImagefile();
-	
-	return TRUE;  // return TRUE  unless you set the focus to a control
+
+  // Update introduction if requested...
+  if (m_alternate_intro) {
+    CWnd *help = GetDlgItem(IDC_STATIC_HELP);
+    if (help) {
+      CString temp;
+      help->GetWindowText(temp);
+      int start = temp.Find(_T("On OLS"));
+      if (start>0) {
+        int end = temp.Find(_T("."),start);
+        if (end>0) {
+          temp.Delete(start,end-start);
+          temp.Insert(start,_T("OLS should already be in UPDATE mode (two green LED's turned on)"));
+          help->SetWindowText(temp);
+        }
+      }
+    }
+  }
+  
+  return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 void CWinLoaderDialog::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
-		CDialog::OnSysCommand(nID, lParam);
-	}
+  if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+  {
+    CAboutDlg dlgAbout;
+    dlgAbout.DoModal();
+  }
+  else
+  {
+    CDialog::OnSysCommand(nID, lParam);
+  }
 }
 
 // If you add a minimize button to your dialog, you will need the code below
@@ -354,34 +408,36 @@ void CWinLoaderDialog::OnSysCommand(UINT nID, LPARAM lParam)
 
 void CWinLoaderDialog::OnPaint() 
 {
-	if (IsIconic())
-	{
-		CPaintDC dc(this); // device context for painting
+  if (IsIconic())
+  {
+/*
+    CPaintDC dc(this); // device context for painting
 
-		SendMessage(WM_ICONERASEBKGND, (WPARAM) dc.GetSafeHdc(), 0);
+    SendMessage(WM_ICONERASEBKGND, (WPARAM) dc.GetSafeHdc(), 0);
 
-		// Center icon in client rectangle
-		int cxIcon = GetSystemMetrics(SM_CXICON);
-		int cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		int x = (rect.Width() - cxIcon + 1) / 2;
-		int y = (rect.Height() - cyIcon + 1) / 2;
+    // Center icon in client rectangle
+    int cxIcon = GetSystemMetrics(SM_CXICON);
+    int cyIcon = GetSystemMetrics(SM_CYICON);
+    CRect rect;
+    GetClientRect(&rect);
+    int x = (rect.Width() - cxIcon + 1) / 2;
+    int y = (rect.Height() - cyIcon + 1) / 2;
 
-		// Draw the icon
-		dc.DrawIcon(x, y, m_hIcon);
-	}
-	else
-	{
-		CDialog::OnPaint();
-	}
+    // Draw the icon
+    dc.DrawIcon(x, y, m_hIcon);
+*/
+  }
+  else
+  {
+    CDialog::OnPaint();
+  }
 }
 
 // The system calls this to obtain the cursor to display while the user drags
 //  the minimized window.
 HCURSOR CWinLoaderDialog::OnQueryDragIcon()
 {
-	return (HCURSOR) m_hIcon;
+  return (HCURSOR) m_hIcon;
 }
 
 
@@ -467,7 +523,9 @@ void CWinLoaderDialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpItem)
       else oldfont = dc.SelectObject(&font);
 
       // Draw COM port & description...
-      temp.Format(_T("COM%d"),portnum);
+      if (portnum == 0xFFFF)
+        temp = _T("OLS-HID");
+      else temp.Format(_T("COM%d"),portnum);
       dc.TextOut(lpItem->rcItem.left+2, lpItem->rcItem.top+1, temp);
 
       dc.SetBkColor(infocolor);
@@ -482,8 +540,8 @@ void CWinLoaderDialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpItem)
     dc.Detach();
     return;
   }
-	
-	CDialog::OnDrawItem(nIDCtl, lpItem);
+  
+  CDialog::OnDrawItem(nIDCtl, lpItem);
 }
 
 
@@ -513,7 +571,10 @@ void CWinLoaderDialog::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpItem)
     int max_desc_width = 0;
     int max_height = 0;
     for (i=0; i<m_portlist.GetNumPorts(); i++) {
-      temp.Format(_T("COM%d"),m_portlist.GetPortNum(i));
+      int portnum = m_portlist.GetPortNum(i);
+      if (portnum == 0xFFFF)
+        temp = _T("OLS-HID");
+      else temp.Format(_T("COM%d"),portnum);
       sz = dc.GetTextExtent(temp);
       if (sz.cx > max_port_width) max_port_width = sz.cx;
       if (sz.cy > max_height) max_height = sz.cy;
@@ -531,8 +592,8 @@ void CWinLoaderDialog::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpItem)
     lpItem->itemHeight = m_portlist_height;
     return;
   }
-	
-	CDialog::OnMeasureItem(nIDCtl, lpItem);
+  
+  CDialog::OnMeasureItem(nIDCtl, lpItem);
 }
 
 
@@ -551,6 +612,11 @@ void CWinLoaderDialog::OnRefreshPortList()
     m_portlist.AddPort(4);
   }
 
+  if (CheckBootloaderMode()) {
+    CSerialPortInfo *portinfo = m_portlist.AddPort(0xFFFF);
+    if (portinfo) portinfo->SetLocationInfo("OLS in Bootloader Mode");
+  }
+
   if (::IsWindow(m_hWnd)) {
     m_analyzerport_list.ResetContent();
     if (m_portlist.GetNumPorts()>0) {
@@ -560,7 +626,10 @@ void CWinLoaderDialog::OnRefreshPortList()
       for (i=0; i<m_portlist.GetNumPorts(); i++) {
         int portnum = m_portlist.GetPortNum(i);
         CString desc = m_portlist.GetDescription(i);
-        temp.Format(_T("COM%d %s"),portnum,desc);
+
+        if (portnum == 0xFFFF)
+          temp = _T("OLS-HID");
+        else temp.Format(_T("COM%d %s"),portnum,desc);
         m_analyzerport_list.AddString(temp);
 
         // Detect first port with a known device name.  
@@ -585,6 +654,16 @@ void CWinLoaderDialog::OnRefreshPortList()
 }
 
 
+//
+// Check if OLS already in bootloader mode...
+//
+bool CWinLoaderDialog::CheckBootloaderMode()
+{
+  boot_rsp response;
+	PicBootloader device;
+  return (device.getversion(&response) == PICRESULT_NOERROR);
+}
+
 
 //
 // User made selection in port list...
@@ -608,13 +687,13 @@ void CWinLoaderDialog::OnSelchangeAnalyzerportList()
 void CWinLoaderDialog::OnBrowse() 
 {
   CFileFilterString filter;
-  filter.AddFilter("FPGA Image Files",IDR_FPGAHEXFILE,IDR_FPGAMCSFILE,IDR_FPGABINFILE,IDR_FPGABITFILE,-1);
+  filter.AddFilter("FPGA or PIC Images",IDR_HEXFILE,IDR_MCSFILE,IDR_BINFILE,IDR_BITFILE,-1);
   filter.AddFilter(-1);
 
-  CString defext(GetFiletypeExtension(IDR_FPGAHEXFILE));
+  CString defext(GetFiletypeExtension(IDR_HEXFILE));
 
   CFileNameDialogEx dlg (
-    TRUE, _T("Select FPGA Image File"), m_target_file, defext, m_target_file,
+    TRUE, _T("Select FPGA Image or PIC Firmware File"), m_target_file, defext, m_target_file,
     OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
     OFNX_ENABLE_PLACEBAR,
     filter, this);
@@ -694,30 +773,116 @@ void CWinLoaderDialog::OnOK()
   }
 
   if (m_target_format<0) {
-    MessageBox ("FPGA image file type unknown!",caption,MB_ICONEXCLAMATION|MB_OK);
+    MessageBox ("Image file type unknown!",caption,MB_ICONEXCLAMATION|MB_OK);
     return;    
   }
 
   if (m_target_file.IsEmpty()) {
-    MessageBox ("FPGA image file not specified!",caption,MB_ICONEXCLAMATION|MB_OK);
+    MessageBox ("Image file not specified!",caption,MB_ICONEXCLAMATION|MB_OK);
     return;    
   }
 
   if (!FileExists(m_target_file)) {
-    MessageBox ("FPGA image file not found!",caption,MB_ICONEXCLAMATION|MB_OK);
+    MessageBox ("Image file not found!",caption,MB_ICONEXCLAMATION|MB_OK);
     return;    
   }
 
-  // Create backup file name.  Try to create a unique name.  However, after 32 tries
-  // just use the default...
+
+  // Examine file... See if its for PIC or fpga image...
+  DWORD buffer_size = 1024*1024;
+  BYTE *buffer = (BYTE*)malloc(buffer_size);
+  unsigned int read_size=0;
+  int result=1;
+  if (buffer)
+    switch (m_target_format) {
+      case IDR_MCSFILE :
+      case IDR_HEXFILE : 
+        result = HEX_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+        break;
+
+      case IDR_BINFILE : 
+        result = BIN_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+        break;
+
+      case IDR_BITFILE :
+        result = BIT_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+        break;
+
+      default :
+        MessageBox ("Image file type unknown!",caption,MB_ICONEXCLAMATION|MB_OK);
+        return;
+    }
+
+  free (buffer);
+  buffer = NULL;
+
+  if (!result && (read_size==0)) { // file found, but nothing read, bad file...
+    MessageBox ("Bad Image file!",caption,MB_ICONEXCLAMATION|MB_OK);
+    return;
+  }
+
+  if (result) {
+    MessageBox ("Unable to load Image file!",caption,MB_ICONEXCLAMATION|MB_OK);
+    return;
+  }
+
+  if (read_size < (OLS_FLASH_SIZE/2)) { // PIC firmware
+    MessageBox ("Image file too small!",caption,MB_ICONEXCLAMATION|MB_OK);
+    return;
+  }
+
+  TRACE ("Image File Read Size = %d bytes\n", read_size);
+
+  m_upload_mode = UPLOAD_FPGA;
+  if (read_size <= OLS_FLASH_SIZE) // PIC firmware
+    m_upload_mode = UPLOAD_PIC;
+  else if (read_size <= 150000) {
+    MessageBox ("FPGA image too small!",caption,MB_ICONEXCLAMATION|MB_OK);
+    return;
+  }
+
+  if ((m_upload_mode == UPLOAD_PIC) && !m_alternate_intro)
+    if (MessageBox (
+      _T("CAUTION: You requested a -PIC firmware- update.\n\n"
+         "Updating the PIC firmware may leave your Logic Sniffer unusable,\n"
+         "unless you've a PICKit or Bus Pirate for manual restore.\n\n"
+         "Are you positive you wish to update the PIC firmware on your Logic Sniffer?\n\n"),
+      _T("Confirm PIC Firmware Update"), 
+      MB_ICONWARNING|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_APPLMODAL) != IDYES)
+    {
+      return;
+    }
+
+  m_update_mode_force = false;
+  if (m_upload_mode == UPLOAD_PIC)
+    if (read_size == (OLS_FLASH_SIZE-8))
+      m_update_mode_force = true;
+    else if (read_size != OLS_FLASH_SIZE) {
+      CString temp;
+      temp.Format(
+        _T("WARNING: The requested -PIC firmware- is a non-standard size.\n\n"
+           "OLS_WINLOADER expects PIC firmware to be exactly %d bytes.\n"
+           "Your new firmware is %d bytes.  This may indicate corrupted\n"
+           "firmware image.\n\n"
+           "Click Yes to ignor discrepancy or No to abort.\n\n"),
+           OLS_FLASH_SIZE,read_size);
+
+      if (MessageBox (temp, _T("Confirm PIC Firmware Update"), MB_ICONWARNING|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_APPLMODAL) != IDYES)
+        return;
+
+      m_update_mode_force = true;
+    }
+
+  // Create backup file name.  Try to create a unique name.  
+  // However, after 32 tries just use the default...
   int backupnum = 0;
+  char *backupdefault = (m_upload_mode==UPLOAD_FPGA) ? FPGA_BACKUP_FILENAME : PIC_BACKUP_FILENAME;
   do {
-    if (backupnum==0)
-      m_backup_file.Format("%s%s%s",GetPathnamePortion(m_target_file),BACKUP_FILENAME,GetFiletypeExtension(IDR_FPGAHEXFILE));
-    else m_backup_file.Format("%s%s%d%s",GetPathnamePortion(m_target_file),BACKUP_FILENAME,backupnum,GetFiletypeExtension(IDR_FPGAHEXFILE));
-  } while ((backupnum++<32) && (FileExists(m_backup_file)));
-  if (backupnum>=32)
-    m_backup_file.Format("%s%s%s",GetPathnamePortion(m_target_file),BACKUP_FILENAME,GetFiletypeExtension(IDR_FPGAHEXFILE));
+    if ((backupnum==0) || (backupnum>=31))
+      m_backup_file.Format("%s%s%s",GetPathnamePortion(m_target_file),backupdefault,GetFiletypeExtension(IDR_HEXFILE));
+    else m_backup_file.Format("%s%s%d%s",GetPathnamePortion(m_target_file),backupdefault,backupnum,GetFiletypeExtension(IDR_HEXFILE));
+    backupnum++;
+  } while ((backupnum<32) && (FileExists(m_backup_file)));
 
   // Hide instructions...
   m_instructions.ModifyStyle(WS_VISIBLE,0); 
@@ -743,9 +908,9 @@ void CWinLoaderDialog::OnOK()
   theApp.WriteProfileInt(INI_SECTION,"TargetPort",m_target_portnum);
 
   // Launch worker thread...
-	DWORD dwThreadId = 0;
-	m_hThread = ::CreateThread(0,0,ThreadProc,LPVOID(this),0,&dwThreadId);
-	if (m_hThread == 0)
+  DWORD dwThreadId = 0;
+  m_hThread = ::CreateThread(0,0,ThreadProc,LPVOID(this),0,&dwThreadId);
+  if (m_hThread == 0)
     m_status.SetWindowText(_T("ERROR: Unable to start worker to perform upload!"));
 }
 
@@ -760,7 +925,7 @@ void CWinLoaderDialog::OnCancel()
     delete m_pToolTip;
     m_pToolTip = NULL;
   }
-	CDialog::OnCancel();
+  CDialog::OnCancel();
 }
 
 
@@ -778,9 +943,10 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
   CString temp;
   uint8_t flashjedic[OLD_FLASHID_INFOSIZE];
   int buffer_size, percentage, page;
+  int status = wParam & 0xFFFF;
 
   bool failed = false;
-  switch (wParam & 0xFFFF) {
+  switch (status) {
     case OLS_WORKERSTATUS_BADPORT : // Error opening serial port...
       m_status.SetWindowText(_T("ERROR: Unable to open serial port!"));
       failed = true;
@@ -797,7 +963,7 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
       break;
 
     case OLS_WORKERSTATUS_BADOLSID : // Error reading OLS ID...
-      temp.Format (_T("ERROR: %s"),OLSResultErrorMsg(lParam));
+      temp.Format (_T("ERROR: %s   Verify OLS in Update mode && retry."),OLSResultErrorMsg(lParam));
       m_status.SetWindowText(temp);
       failed = true;
       break;
@@ -864,15 +1030,20 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
       failed = true;
       break;
 
-    case OLS_WORKERSTATUS_WRITEFILE :
+    case OLS_WORKERSTATUS_FPGA_WRITEFILE :
       m_status2.SetWindowText("");
       m_status.SetWindowText(_T("Saving FPGA image backup file..."));
       break;
 
-    case OLS_WORKERSTATUS_WRITEFILEFAIL : // Error writing backup of flash ROM to disk...
-      temp.Format(_T("ERROR: Writing backup failed!  %s"),FileResultErrorMsg(lParam,m_backup_file,NULL));
+    case OLS_WORKERSTATUS_FPGA_WRITEFILE_FAIL : // Error writing backup of FPGA flash ROM to disk...
+      temp.Format(_T("ERROR: Writing FPGA backup failed!  %s"),FileResultErrorMsg(lParam,m_backup_file,NULL));
       m_status.SetWindowText(temp);
       failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_FPGA_WRITEFILE_SUCCESS :
+      m_status2.SetWindowText("");
+      m_status.SetWindowText(_T("FPGA flash ROM backup saved!"));
       break;
     
     case OLS_WORKERSTATUS_READFILE :
@@ -891,11 +1062,11 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
       m_status.SetWindowText(temp);
       break;
 
-    case OLS_WORKERSTATUS_ERASEROM :
+    case OLS_WORKERSTATUS_FPGA_ERASEROM :
       m_status.SetWindowText(_T("Erasing FPGA ROM prior to writing..."));
       break;
 
-    case OLS_WORKERSTATUS_ERASEFAIL : // Flash erase failed...
+    case OLS_WORKERSTATUS_FPGA_ERASEFAIL : // Flash erase failed...
       temp.Format(_T("ERROR: Flash erase failed!  %s"),OLSResultErrorMsg(lParam));
       m_status.SetWindowText(temp);
       failed = true;
@@ -926,6 +1097,11 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
 
     case OLS_WORKERSTATUS_RUNOK :
       m_status.SetWindowText(_T("RUN mode enabled.  Update complete!"));
+      m_ok_button.ModifyStyle(WS_VISIBLE,0);
+      m_cancel_button.ModifyStyle(WS_VISIBLE,0);
+      m_advanced_button.ModifyStyle(WS_VISIBLE,0);
+      m_close_button.ModifyStyle(0,WS_VISIBLE);
+      Invalidate();
       break;
 
     case OLS_WORKERSTATUS_RUNFAIL :
@@ -937,6 +1113,98 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
     case OLS_WORKERSTATUS_CANCEL : // User cancelled the operation.
       m_status.SetWindowText(_T("Cancelled by user."));
       failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_BOOTLOADER_SWITCH :
+      m_status.SetWindowText(_T("Switching OLS into bootloader mode..."));
+      break;
+
+    case OLS_WORKERSTATUS_BOOTLOADER_FAILED : // Unable to switch into bootloader mode...
+      m_status.SetWindowText(_T("ERROR: Unable to switch into bootloader mode."));
+      failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_BOOTLOADER_SUCCESS : // Unable to switch into bootloader mode...
+      temp.Format(_T("Bootloader switch Successful!"));
+      m_status.SetWindowText(temp);
+      break;
+
+    case OLS_WORKERSTATUS_READPIC :
+      m_status.SetWindowText(_T("Backing up PIC firmware..."));
+      break;
+
+    case OLS_WORKERSTATUS_READPIC_FAIL :
+      temp.Format(_T("ERROR: Backing up PIC firmware failed!  Error=%d"),lParam);
+      m_status.SetWindowText(temp);
+      failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_PIC_WRITEFILE_FAIL : // Error writing backup of PIC flash to disk...
+      temp.Format(_T("ERROR: Writing PIC backup failed!  %s"),FileResultErrorMsg(lParam,m_backup_file,NULL));
+      m_status.SetWindowText(temp);
+      failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_PIC_WRITEFILE_SUCCESS :
+      m_status2.SetWindowText("");
+      m_status.SetWindowText(_T("PIC firmware backup saved!"));
+      break;
+
+    case OLS_WORKERSTATUS_PIC_ERASEROM :
+      m_status.SetWindowText(_T("Erasing PIC firmware flash prior to writing..."));
+      break;
+
+    case OLS_WORKERSTATUS_PIC_ERASEFAIL : // Flash erase failed...
+      temp.Format(_T("ERROR: Flash erase failed!  %s"),OLSResultErrorMsg(lParam));
+      m_status.SetWindowText(temp);
+      failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_WRITEPIC :
+      m_status.SetWindowText(_T("Writing PIC firmware..."));
+      break;
+
+    case OLS_WORKERSTATUS_WRITEPIC_FAIL :
+      m_status.SetWindowText(_T("ERROR: Writing PIC firmware failed!"));
+      failed = true;
+      break;
+
+    case OLS_WORKERSTATUS_VERIFYPIC :
+      m_status.SetWindowText(_T("Verifying PIC firmware..."));
+      break;
+
+    case OLS_WORKERSTATUS_VERIFYPIC_FAIL :
+      m_status.SetWindowText(_T("ERROR: Verifying PIC firmware failed!"));
+      failed = true;
+      break;
+
+    case PICSTATUS_INIT_XFER :
+    case PICSTATUS_START_XFER :
+      break;
+
+    case PICSTATUS_UPDATE_XFER :
+      percentage = lParam;
+      temp.Format("(%d%% complete)",percentage);
+      m_status2.SetWindowText(temp);
+      m_progress.SetPos(percentage);
+      break;
+
+    case PICSTATUS_DONE_XFER :
+      m_status2.SetWindowText("");
+      m_progress.SetPos(100);
+      break;
+
+    case PICRESULT_DEVICE_NOT_FOUND :
+      m_status.SetWindowText(_T("ERROR: PIC microcontroller not found."));
+      failed = true;
+      break;
+
+    default :
+      if ((status>=PICRESULT_FIRST_ERROR) && (status<PICRESULT_LAST_ERROR)) {
+        temp.Format(_T("ERROR:  PIC bootloader fault.  Error=%d"),status);
+        m_status.SetWindowText(temp);
+        failed = true;
+      }
       break;
   }
 
@@ -968,9 +1236,9 @@ LRESULT CWinLoaderDialog::OnUploadStatus(WPARAM wParam, LPARAM lParam)
 //
 DWORD WINAPI CWinLoaderDialog::ThreadProc (LPVOID lpArg)
 {
-	// Route the method to the actual object
-	CWinLoaderDialog* pThis = reinterpret_cast<CWinLoaderDialog*>(lpArg);
-	return pThis->ThreadProc();
+  // Route the method to the actual object
+  CWinLoaderDialog* pThis = reinterpret_cast<CWinLoaderDialog*>(lpArg);
+  return pThis->ThreadProc();
 }
 
 
@@ -991,81 +1259,93 @@ bool CWinLoaderDialog::CheckUserAbort(int msecs)
 }
 
 
+
 DWORD CWinLoaderDialog::ThreadProc (void)
 {
   int result, i, pages, wrsize;
+  int dev_fd = -1;
   int percent = 0;
   int last_percent = -1;
   int PUMP_FlashID = -1;
+  boot_rsp response;
 
-	DWORD buffer_size;
-	BYTE *buffer = NULL;
+  DWORD buffer_size;
+  BYTE *buffer = NULL;
+	PicBootloader device;
+  device.m_progress_hWnd = m_hWnd;
+
+  // First a quick check (if uploading PIC) to see if its already in bootloader mode...
+  if (m_upload_mode==UPLOAD_PIC)
+    if (CheckBootloaderMode())
+      goto found_bootloader;
 
   // Open serial port...
-	int dev_fd = serial_open(m_port);
-	if (dev_fd < 0) {
+  dev_fd = serial_open(m_port);
+  if (dev_fd < 0) {
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BADPORT, 0);
     goto cleanup;
   }
 
   // Setup port speed...
-	if (serial_setup(dev_fd, m_port_speed) < 0 ) {
+  if (serial_setup(dev_fd, m_port_speed) < 0 ) {
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BADSPEED, 0);
-  	goto cleanup;
-	}
+    goto cleanup;
+  }
 
   // Get OLS ID...
   PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_QUERYID, 0);
   uint8_t olsid[OLS_ID_INFOSIZE];
-	result = PUMP_GetID(dev_fd, olsid, sizeof(olsid));
+  result = PUMP_GetID(dev_fd, olsid, sizeof(olsid));
   if (result) {
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BADOLSID, result);
     goto cleanup;
   }
-	TRACE("Found OLS HW: %d, FW: %d.%d, Boot: %d\n", olsid[1], olsid[3], olsid[4], olsid[6]);
+  TRACE("Found OLS HW: %d, FW: %d.%d, Boot: %d\n", olsid[1], olsid[3], olsid[4], olsid[6]);
   if (CheckUserAbort(100)) goto cleanup;
 
   PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_QUERYID, 1 | (olsid[1]<<16));
   if (CheckUserAbort(1000)) goto cleanup;
 
   // Get flash type...
-  m_flashid_name = _T("Unknown Flash Type");
-  uint8_t flashjedic[OLD_FLASHID_INFOSIZE];
+  if (m_upload_mode==UPLOAD_FPGA) {
+    m_flashid_name = _T("Unknown Flash Type");
+    uint8_t flashjedic[OLD_FLASHID_INFOSIZE];
 
-  if (m_ignore_flashrom_jedec) {
-    PUMP_FlashID=0; // Assume ATMEL AT45DB041D...
-    memcpy (flashjedic, PUMP_Flash[0].jedec_id, 4);
-    m_flashid_name = PUMP_Flash[PUMP_FlashID].name;
-  }
-  else {
-    result = PUMP_GetFlashID(dev_fd, &PUMP_FlashID, flashjedic, sizeof(flashjedic), m_ignore_flashrom_jedec);
-    if (result) {
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_READFAIL, result);
-      goto cleanup;
-	  }
-	  if (PUMP_FlashID<0) {
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_UNKNOWN, *((DWORD*)(&flashjedic)));
-      goto cleanup;
-	  }
-    m_flashid_name = PUMP_Flash[PUMP_FlashID].name;
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_VALID, PUMP_FlashID);
-    if (CheckUserAbort(1000)) goto cleanup;
+    if (m_ignore_flashrom_jedec) {
+      PUMP_FlashID=0; // Assume ATMEL AT45DB041D...
+      memcpy (flashjedic, PUMP_Flash[0].jedec_id, 4);
+      m_flashid_name = PUMP_Flash[PUMP_FlashID].name;
+    }
+    else {
+      result = PUMP_GetFlashID(dev_fd, &PUMP_FlashID, flashjedic, sizeof(flashjedic), m_ignore_flashrom_jedec);
+      if (result) {
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_READFAIL, result);
+        goto cleanup;
+      }
+      if (PUMP_FlashID<0) {
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_UNKNOWN, *((DWORD*)(&flashjedic)));
+        goto cleanup;
+      }
+      m_flashid_name = PUMP_Flash[PUMP_FlashID].name;
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_JEDIC_VALID, PUMP_FlashID);
+      if (CheckUserAbort(1000)) goto cleanup;
+    }
   }
 
   // Query OLS status...
-	if (m_query_ols_status) {
+  if (m_query_ols_status) {
     BYTE status;
-		result = PUMP_GetStatus(dev_fd, &status);
+    result = PUMP_GetStatus(dev_fd, &status);
     if (result) {
       PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_OLSSTATUS_READFAIL, result);
       goto cleanup;
     }
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_OLSSTATUS_VALID, status);
     if (CheckUserAbort(1000)) goto cleanup;
-	}
+  }
 
   // Perform self test...
-	if (m_selftest) {
+  if (m_selftest) {
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_SELFTEST, 0);
     result = PUMP_selftest(dev_fd);
     if (result) {
@@ -1074,24 +1354,238 @@ DWORD CWinLoaderDialog::ThreadProc (void)
     }
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_SELFTEST, 1);
     if (CheckUserAbort(1000)) goto cleanup;
-	}
+  }
 
-	// Allocate buffer needed...
-	buffer_size = PUMP_Flash[PUMP_FlashID].pages * PUMP_Flash[PUMP_FlashID].page_size;
-	buffer = (BYTE*)malloc(buffer_size);
+  // Switch into bootloader mode, if updating the PIC...
+  if (m_upload_mode==UPLOAD_PIC) {
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BOOTLOADER_SWITCH, 0);
+    if (CheckUserAbort(1000)) goto cleanup;
+    PUMP_EnterBootloader(dev_fd);
 
-	if (buffer == NULL) {
+    int count=0;
+    result=-1;
+    while ((count<5) && (result != PICRESULT_NOERROR)) {
+      Sleep(1000);
+	    result = device.getversion(&response);
+    }
+    if (result != PICRESULT_NOERROR)  {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BOOTLOADER_FAILED, result);
+      device.reset();
+      goto cleanup;
+    }
+  }
+
+found_bootloader:
+
+  // Allocate buffer needed...
+  if (m_upload_mode==UPLOAD_PIC)
+    buffer_size = 1024*1024;
+  else buffer_size = PUMP_Flash[PUMP_FlashID].pages * PUMP_Flash[PUMP_FlashID].page_size;
+
+  buffer = (BYTE*)malloc(buffer_size);
+  if (buffer == NULL) {
     PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BADBUFFER, buffer_size);
     goto cleanup;
-	}
-	memset(buffer, 0, buffer_size);
+  }
+  memset(buffer, 0, buffer_size);
+
+  // Indicate found the bootloader...
+  if (m_upload_mode==UPLOAD_PIC) {
+    m_bootloader_version = response.get_fw_ver;
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_BOOTLOADER_SUCCESS, buffer_size);
+    if (CheckUserAbort(1000)) {
+      device.reset();
+      goto cleanup;
+    }
+  }
 
   // Backup ROM...
-  if (m_backup_fpga) {
-    pages = PUMP_Flash[PUMP_FlashID].pages;
+  if (m_backup_fpga)
+    switch  (m_upload_mode) {
+      case UPLOAD_PIC : { // backup PIC firmware...
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READPIC, 0);
+        BUFPTR picbuffer=NULL;
+        size_t picbufsize=0;
+        result = device.read(&picbuffer,&picbufsize);
+        if (result || (picbuffer==NULL)) {
+          PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READPIC_FAIL, result);
+          device.reset();
+          goto cleanup;
+        }
 
+        result = HEX_WriteFile(m_backup_file, picbuffer, picbufsize);
+        free (picbuffer);
+        picbuffer = NULL;
+
+        if (result) {
+          PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_PIC_WRITEFILE_FAIL, result);
+          device.reset();
+          goto cleanup;
+        }
+
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_PIC_WRITEFILE_SUCCESS, result);
+        if (CheckUserAbort(1000)) {
+          device.reset();
+          goto cleanup;
+        }
+        break;
+      }
+
+      case UPLOAD_FPGA : { // backup FPGA serial flash ROM...
+        pages = PUMP_Flash[PUMP_FlashID].pages;
+
+        last_percent = -1;
+        for (i = 0; i < pages; i ++) {
+          if (m_cancel_worker) {
+            TRACE ("Worker %08x cancelled.\n", m_hThread);
+            PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_CANCEL, 0);
+            goto cleanup;
+          }
+          // Update dialog...
+          percent = (100*(i+1))/pages;
+          if (percent>99) percent = (i<(pages-1)) ? 99 : 100;
+          if (percent != last_percent) {
+            last_percent = percent;
+            PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READROM, percent);
+          }
+
+          int result = PUMP_FlashRead(dev_fd, PUMP_FlashID, i, buffer + (PUMP_Flash[PUMP_FlashID].page_size * i));
+          if (result) {
+            PostMessage(OLS_UPLOAD_STATUS, (((DWORD)i)<<16)|(DWORD)OLS_WORKERSTATUS_READROMFAIL, result);
+            goto cleanup;
+          }
+        }
+
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_FPGA_WRITEFILE, 0);
+
+        wrsize = pages * PUMP_Flash[PUMP_FlashID].page_size;
+        result = HEX_WriteFile(m_backup_file, buffer, wrsize); 
+        if (result) {
+          PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_FPGA_WRITEFILE_FAIL, result);
+          goto cleanup;
+        }
+
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_FPGA_WRITEFILE_SUCCESS, result);
+        if (CheckUserAbort(1000)) goto cleanup;
+        break;
+      }
+    }
+
+  // Read new FPGA image file from disk...
+  PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READFILE, 0);
+  unsigned int read_size;
+
+  switch (m_target_format) {
+    case IDR_MCSFILE :
+    case IDR_HEXFILE : 
+      result = HEX_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+      break;
+
+    case IDR_BINFILE : 
+      result = BIN_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+      break;
+
+    case IDR_BITFILE :
+      result = BIT_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
+      break;
+
+    default :
+      result = FILERESULT_ERROR_BADFILEFORMAT;
+      break;
+  }
+
+  if (!result && (read_size==0)) // file found, but nothing read, bad file...
+    result = FILERESULT_ERROR_BADFILEFORMAT;
+
+  if (result) {
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READFILEFAIL, result);
+    goto cleanup;
+  }
+  TRACE ("Binary size = %ld\n", (long int)read_size);
+
+  // Sanity check on the file size...
+  if (m_upload_mode == UPLOAD_PIC) 
+	  if (m_update_mode_force) 
+      read_size = OLS_FLASH_SIZE;
+    else if (read_size != OLS_FLASH_SIZE) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READFILEFAIL, result);
+      goto cleanup;
+    }
+
+  // Give user a chance to cancel...
+  for (i=50; i>=0; i--) {
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_COUNTDOWN, i);
+    if (CheckUserAbort(100)) {
+      if (m_upload_mode == UPLOAD_PIC) device.reset();
+      goto cleanup;
+    }
+  }
+  
+  //
+  // PIC firmware update...
+  //
+  if (m_upload_mode == UPLOAD_PIC) {
+    // Erase PIC flash...
+    if (!m_noerase_flashrom) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_PIC_ERASEROM, 0);
+      result = device.erase();
+      if (result) {
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_PIC_ERASEFAIL, 0);
+        device.reset();
+        goto cleanup;
+      }
+    }
+
+    // Write new PIC firmware...
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEPIC, 0);
+	  result = device.write(buffer, read_size);
+    if (result) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEPIC_FAIL, result);
+      device.reset();
+      goto cleanup;
+    }
+
+    // Verify new PIC firmware...
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_VERIFYPIC, 0);
+    result = device.verify(buffer,read_size);
+    if (result) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_VERIFYPIC_FAIL, result);
+      device.reset();
+      goto cleanup;
+    }
+
+    // Reset after upload...
+    result = device.reset();
+    if (result) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNFAIL, result);
+      goto cleanup;
+    }
+    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNOK, 0);
+  }
+
+
+  //
+  // FPGA update...
+  //
+  if (m_upload_mode == UPLOAD_FPGA) {
+    // Erase ROM...
+    if (!m_noerase_flashrom) {
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_FPGA_ERASEROM, 0);
+      result = PUMP_FlashErase(dev_fd, PUMP_FlashID);
+      if (result) {
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_FPGA_ERASEFAIL, result);
+        goto cleanup;
+      }
+    }
+
+    // Compute # of pages to write... 
+    pages = (read_size+PUMP_Flash[PUMP_FlashID].page_size-1)/PUMP_Flash[PUMP_FlashID].page_size;
+    if (pages > PUMP_Flash[PUMP_FlashID].pages)
+      pages = PUMP_Flash[PUMP_FlashID].pages;
+
+    // Write the ROM...
     last_percent = -1;
-		for (i = 0; i < pages; i ++) {
+    for (i = 0; i < pages; i++) {
       if (m_cancel_worker) {
         TRACE ("Worker %08x cancelled.\n", m_hThread);
         PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_CANCEL, 0);
@@ -1102,125 +1596,25 @@ DWORD CWinLoaderDialog::ThreadProc (void)
       if (percent>99) percent = (i<(pages-1)) ? 99 : 100;
       if (percent != last_percent) {
         last_percent = percent;
-        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READROM, percent);
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEROM, percent);
       }
-
-			int result = PUMP_FlashRead(dev_fd, PUMP_FlashID, i, buffer + (PUMP_Flash[PUMP_FlashID].page_size * i));
+      // Write page...
+      int result = PUMP_FlashWrite(dev_fd, PUMP_FlashID, i, buffer + (PUMP_Flash[PUMP_FlashID].page_size * i));
       if (result) {
-        PostMessage(OLS_UPLOAD_STATUS, (((DWORD)i)<<16)|(DWORD)OLS_WORKERSTATUS_READROMFAIL, result);
+        PostMessage(OLS_UPLOAD_STATUS, (((DWORD)i)<<16)|(DWORD)OLS_WORKERSTATUS_WRITEROMFAIL, result);
         goto cleanup;
       }
-		}
-
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEFILE, 0);
-
-		wrsize = pages * PUMP_Flash[PUMP_FlashID].page_size;
-    result = HEX_WriteFile(m_backup_file, buffer, wrsize); 
-    if (result) {
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEFILEFAIL, result);
-      goto cleanup;
     }
-  }
 
-  // Read new FPGA image file from disk...
-  PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READFILE, 0);
-  unsigned int read_size;
-
-  switch (m_target_format) {
-    case IDR_FPGAMCSFILE :
-    case IDR_FPGAHEXFILE : 
-      result = HEX_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
-      break;
-
-    case IDR_FPGABINFILE : 
-      result = BIN_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
-      break;
-
-    case IDR_FPGABITFILE :
-      result = BIT_ReadFile(m_target_file, buffer, buffer_size, &read_size); 
-      break;
-
-    default :
-      result = FILERESULT_ERROR_BADFILEFORMAT;
-      break;
-  }
-
-	if (!result && (read_size==0)) // file found, but nothing read, bad file...
-    result = FILERESULT_ERROR_BADFILEFORMAT;
-
-  if (result) {
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_READFILEFAIL, result);
-    goto cleanup;
-  }
-	TRACE ("Binary size = %ld\n", (long int)read_size);
-
-  // Give user a chance to cancel...
-  for (i=50; i>=0; i--) {
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_COUNTDOWN, i);
-    if (CheckUserAbort(100)) goto cleanup;
-  }
-
-/*
-//ZZZ
-  result = HEX_WriteFile(m_backup_file, buffer, read_size); 
-  percent=-1;
-  while (1) {
-    percent++;
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEROM, percent);
-    if (CheckUserAbort(50)) goto cleanup;
-    if (percent>99) {
-      goto cleanup;
+    // Run after upload...
+    if (m_run_after_upload) {
+      result = PUMP_EnterRunMode(dev_fd);
+      if (result) {
+        PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNFAIL, result);
+        goto cleanup;
+      }
+      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNOK, 0);
     }
-  }
-//ZZZEND
-*/
-
-  // Erase ROM...
-  if (!m_noerase_flashrom) {
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_ERASEROM, 0);
-    result = PUMP_FlashErase(dev_fd, PUMP_FlashID);
-    if (result) {
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_ERASEFAIL, result);
-      goto cleanup;
-    }
-  }
-
-	// Compute # of pages to write... 
-	pages = (read_size+PUMP_Flash[PUMP_FlashID].page_size-1)/PUMP_Flash[PUMP_FlashID].page_size;
-  if (pages > PUMP_Flash[PUMP_FlashID].pages)
-	  pages = PUMP_Flash[PUMP_FlashID].pages;
-
-  // Write the ROM...
-  last_percent = -1;
-	for (i = 0; i < pages; i++) {
-    if (m_cancel_worker) {
-      TRACE ("Worker %08x cancelled.\n", m_hThread);
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_CANCEL, 0);
-      goto cleanup;
-    }
-    // Update dialog...
-    percent = (100*(i+1))/pages;
-    if (percent>99) percent = (i<(pages-1)) ? 99 : 100;
-    if (percent != last_percent) {
-      last_percent = percent;
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_WRITEROM, percent);
-    }
-    // Write page...
-    int result = PUMP_FlashWrite(dev_fd, PUMP_FlashID, i, buffer + (PUMP_Flash[PUMP_FlashID].page_size * i));
-    if (result) {
-      PostMessage(OLS_UPLOAD_STATUS, (((DWORD)i)<<16)|(DWORD)OLS_WORKERSTATUS_WRITEROMFAIL, result);
-      goto cleanup;
-    }
-  }
-
-  // Run after upload...
-  if (m_run_after_upload) {
-		result = PUMP_EnterRunMode(dev_fd);
-    if (result) {
-      PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNFAIL, result);
-      goto cleanup;
-    }
-    PostMessage(OLS_UPLOAD_STATUS, OLS_WORKERSTATUS_RUNOK, 0);
   }
 
 cleanup:

@@ -31,7 +31,7 @@ CString GetProgramPath()
   // If did get EXE pathname, remove name of application (leaving just path)...
   // Should there be no path (just a drive designation), don't use it.
   if (len>0) {
-    for (len = strlen(exepath); len>0; len--) {
+    for (len = lstrlen(exepath); len>0; len--) {
       if (exepath[len-1]=='\\') {
         exepath[len] = 0;
         break;
@@ -45,7 +45,7 @@ CString GetProgramPath()
   }      
 
   // If can't get the EXE pathname, then use current path instead...
-  if (strlen(exepath) == 0) 
+  if (lstrlen(exepath) == 0) 
     getcwd(exepath, _MAX_PATH);
 
   return (AddSlash(exepath));
@@ -109,7 +109,7 @@ CString GetFilenamePortion(CString pathstr)
   int len;
 
   resolve_directory_separator(path,pathstr);
-  for (len = strlen(path); len>0; len--)
+  for (len = lstrlen(path); len>0; len--)
     if ((path[len-1]=='\\') || (path[len-1]==':')) {
       CString temp(pathstr.Mid(len));
       path = temp;
@@ -158,7 +158,7 @@ CString GetExtensionPortion(CString pathstr)
   CString basename;
   resolve_directory_separator(basename,GetFilenamePortion(pathstr));
 
-  int i=strlen(basename)-1;
+  int i=lstrlen(basename)-1;
   while (i>=0) {
     if ((basename[i]=='\\') || (basename[i]==':')) {
       basename.Empty();
@@ -170,7 +170,7 @@ CString GetExtensionPortion(CString pathstr)
     }
     i--;
   }
-  return ("");
+    return ("");
 }
 
 
@@ -206,9 +206,9 @@ CString GetPortDeviceName(int portnum)
 //
 bool FileExists (const char *targetfile)
 {
-	FILE *fileid = fopen(targetfile, "r");
-	if (fileid == NULL) return false;
-  fclose(fileid);
+  HANDLE fh = CreateFile (targetfile,GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+  if (fh == INVALID_HANDLE_VALUE) return false;
+  CloseHandle (fh);
   return true;
 }
 
@@ -220,9 +220,9 @@ bool FileExists (const char *targetfile)
 int strtablecompare (const char *tstr, strtabletype *strtable)
 {
   int index = 0;
-  int tlen = strlen(tstr);
-  while (strlen(strtable->target)>0) {
-    int stlen = strlen(strtable->target);
+  int tlen = lstrlen(tstr);
+  while (lstrlen(strtable->target)>0) {
+    int stlen = lstrlen(strtable->target);
     if (tlen==stlen) {
       bool match = true;
       for (int i=0; match && (i<tlen); i++) {

@@ -50,11 +50,13 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CAboutDlg)
+	DDX_Control(pDX, IDC_LINKS, m_links);
 	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
 	//{{AFX_MSG_MAP(CAboutDlg)
+	ON_BN_CLICKED(IDC_STATIC_ICON, OnStaticIcon)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -62,7 +64,14 @@ END_MESSAGE_MAP()
 BOOL CAboutDlg::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
-
+/*
+  m_links.SetWindowText (
+    "For more information see:\n"
+    "   <a href=\"http://dangerousprototypes.com/open-logic-sniffer\">http://dangerousprototypes.com/open-logic-sniffer</a>\n"
+    "   <a href=\"http://www.gadgetfactory.net/gf/project/bufferflylogic\">http://www.gadgetfactory.net/gf/project/bufferflylogic</a>\n"
+    "   <a href=\"http://www.mygizmos.org/ols\">http://www.mygizmos.org/ols</a>\n"
+  );
+*/
   // Make Windows use the 48x48 icon...
   CWnd *iconwnd = GetDlgItem(IDC_STATIC_ICON);
   HICON hIcon = (HICON)(LoadImage(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDR_MAINFRAME), IMAGE_ICON, 48, 48, LR_DEFAULTCOLOR));
@@ -72,3 +81,8 @@ BOOL CAboutDlg::OnInitDialog()
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
+
+void CAboutDlg::OnStaticIcon() 
+{
+	ShellExecute(::GetDesktopWindow(), _T("open"), _T("http://www.mygizmos.org/ols/#WINLOADER"), NULL,NULL,SW_SHOW);
+}
