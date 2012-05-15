@@ -36,7 +36,7 @@ const struct pump_flash_t PUMP_Flash[] = {
     1024, // number of pages
     "ATMEL AT45DB021D (2MBit)"
   },
-    {
+  {
     "\xef\x30\x13\x00",
     256, // size of page
     2048, // number of pages
@@ -47,6 +47,18 @@ const struct pump_flash_t PUMP_Flash[] = {
     256, // size of page
     1024, // number of pages
     "WINBOND W25X20 (2MBit)"
+  },
+  {
+    "\xef\x30\x14\x00",
+    256, // size of page
+    2048, // number of pages
+    "WINBOND W25X40 (8MBit)"
+  },
+  {
+    "\xef\x40\x14\x00",
+    256, // size of page
+    4096, // number of pages
+    "WINBOND W25Q80 (8MBit)"
   },
 };
 

@@ -27,13 +27,14 @@ Dec 17, 2010 - Ian Davis - Stripped down to only have what was needed, added new
 
 #include "stdafx.h"
 #include "enumser.h"
+#include <setupapi.h>
+#pragma comment(lib, "setupapi.lib")
 
-typedef HKEY (__stdcall SETUPDIOPENDEVREGKEY)(HDEVINFO, PSP_DEVINFO_DATA, DWORD, DWORD, DWORD, REGSAM);
-typedef BOOL (__stdcall SETUPDICLASSGUIDSFROMNAME)(LPCTSTR, LPGUID, DWORD, PDWORD);
-typedef BOOL (__stdcall SETUPDIDESTROYDEVICEINFOLIST)(HDEVINFO);
-typedef BOOL (__stdcall SETUPDIENUMDEVICEINFO)(HDEVINFO, DWORD, PSP_DEVINFO_DATA);
-typedef HDEVINFO (__stdcall SETUPDIGETCLASSDEVS)(LPGUID, LPCTSTR, HWND, DWORD);
-typedef BOOL (__stdcall SETUPDIGETDEVICEREGISTRYPROPERTY)(HDEVINFO, PSP_DEVINFO_DATA, DWORD, PDWORD, PBYTE, DWORD, PDWORD);
+extern "C" {
+#include <hidsdi.h>
+}
+
+#pragma comment(lib, "hid.lib")
 
 
 ///////////////////////////// Implementation //////////////////////////////////
@@ -41,52 +42,16 @@ typedef BOOL (__stdcall SETUPDIGETDEVICEREGISTRYPROPERTY)(HDEVINFO, PSP_DEVINFO_
 BOOL CEnumerateSerial::EnumeratePorts()
 {
   int SPDRPlist[] = {
-    SPDRP_DEVICEDESC, SPDRP_FRIENDLYNAME, SPDRP_MFG, 
+    SPDRP_HARDWAREID, SPDRP_DEVICEDESC, SPDRP_FRIENDLYNAME, SPDRP_MFG,
     SPDRP_LOCATION_INFORMATION, SPDRP_PHYSICAL_DEVICE_OBJECT_NAME, 
     -1};
 
   // Clear anything from previous enumerate...
   ResetPortList();
 
-  // Dynamically get pointers to device installation library (setupapi.dll)
-  // in case it isn't installed...
-  //   SetupDiOpenDevRegKey
-  //   SetupDiEnumDeviceInfo
-  //   SetupDiDestroyDeviceInfoList
-  //   SetupDiGetClassDevs
-  //   SetupDiClassGuidsFromName
-  //   SetupDiGetDeviceRegistryProperty 
-  CLoadLib setupAPI(_T("SETUPAPI.DLL"));
-  if (setupAPI == NULL) return FALSE;
-
-#define SETUPPROC(x,y) x* lpfn##x = reinterpret_cast<x*>(GetProcAddress(setupAPI,y))
-  SETUPPROC(SETUPDIOPENDEVREGKEY,"SetupDiOpenDevRegKey");
-  SETUPPROC(SETUPDIENUMDEVICEINFO, "SetupDiEnumDeviceInfo");
-  SETUPPROC(SETUPDIDESTROYDEVICEINFOLIST, "SetupDiDestroyDeviceInfoList");
-#if defined _UNICODE
-  SETUPPROC(SETUPDIGETCLASSDEVS, "SetupDiGetClassDevsW");
-  SETUPPROC(SETUPDICLASSGUIDSFROMNAME, "SetupDiClassGuidsFromNameW");
-  SETUPPROC(SETUPDIGETDEVICEREGISTRYPROPERTY, "SetupDiGetDeviceRegistryPropertyW");
-#else
-  SETUPPROC(SETUPDIGETCLASSDEVS, "SetupDiGetClassDevsA");
-  SETUPPROC(SETUPDICLASSGUIDSFROMNAME, "SetupDiClassGuidsFromNameA");
-  SETUPPROC(SETUPDIGETDEVICEREGISTRYPROPERTY, "SetupDiGetDeviceRegistryPropertyA");
-#endif  
-                       
-  if ((lpfnSETUPDIOPENDEVREGKEY == NULL) || 
-      (lpfnSETUPDIENUMDEVICEINFO == NULL) || 
-      (lpfnSETUPDIGETDEVICEREGISTRYPROPERTY == NULL) ||
-      (lpfnSETUPDIGETCLASSDEVS == NULL) || 
-      (lpfnSETUPDICLASSGUIDSFROMNAME == NULL) || 
-      (lpfnSETUPDIDESTROYDEVICEINFOLIST == NULL))
-  {
-    SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-    return FALSE;
-  }
-  
   // First need to convert the name "Ports" to a GUID using SetupDiClassGuidsFromName...
   DWORD dwGuids = 0;
-  lpfnSETUPDICLASSGUIDSFROMNAME(_T("Ports"), NULL, 0, &dwGuids);
+  SetupDiClassGuidsFromName(_T("Ports"), NULL, 0, &dwGuids);
   if (dwGuids == 0) return FALSE;
 
   // Allocate the needed memory...
@@ -98,28 +63,28 @@ BOOL CEnumerateSerial::EnumeratePorts()
   }
 
   // Call the function again...
-  if (!lpfnSETUPDICLASSGUIDSFROMNAME(_T("Ports"), pGuids, dwGuids, &dwGuids))
+  if (!SetupDiClassGuidsFromName(_T("Ports"), pGuids, dwGuids, &dwGuids))
     return FALSE;
 
   // Now create a "device information set" which is required to enumerate all the ports...
-  HDEVINFO hDevInfoSet = lpfnSETUPDIGETCLASSDEVS(pGuids, NULL, NULL, DIGCF_PRESENT);
+  HDEVINFO hDevInfoSet = SetupDiGetClassDevs(pGuids, NULL, NULL, DIGCF_PRESENT);
   if (hDevInfoSet == INVALID_HANDLE_VALUE)
     return FALSE;
 
   // Finally do the enumeration...
   int nIndex = 0;
   SP_DEVINFO_DATA devInfo;
-  CHeapPtr<TCHAR> tempstr(256);
+  CHeapPtr<TCHAR> tempstr(1000);
   CSerialPortInfo *portinfo = NULL;
 
   // Enumerate the current device...
   devInfo.cbSize = sizeof(SP_DEVINFO_DATA);
-  while (lpfnSETUPDIENUMDEVICEINFO(hDevInfoSet, nIndex, &devInfo))
+  while (SetupDiEnumDeviceInfo(hDevInfoSet, nIndex, &devInfo))
   {
     portinfo = NULL;
 
     // Get the registry key which stores the ports settings...
-    HKEY hDeviceKey = lpfnSETUPDIOPENDEVREGKEY(hDevInfoSet, &devInfo, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_QUERY_VALUE);
+    HKEY hDeviceKey = SetupDiOpenDevRegKey(hDevInfoSet, &devInfo, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_QUERY_VALUE);
     if (hDeviceKey) {
       tempstr.FillZero();
       DWORD dwSize = tempstr.SizeOf(); 
@@ -141,9 +106,10 @@ BOOL CEnumerateSerial::EnumeratePorts()
         tempstr.FillZero(); 
         DWORD dwSize = tempstr.SizeOf(); 
         DWORD dwType = 0;
-        if (lpfnSETUPDIGETDEVICEREGISTRYPROPERTY(hDevInfoSet, &devInfo, SPDRPlist[i], &dwType, reinterpret_cast<PBYTE>((TCHAR*)tempstr), dwSize, &dwSize) && (dwType == REG_SZ))
+        if (SetupDiGetDeviceRegistryProperty(hDevInfoSet, &devInfo, SPDRPlist[i], &dwType, reinterpret_cast<PBYTE>((TCHAR*)tempstr), dwSize, &dwSize) && ((dwType == REG_SZ) || (dwType == REG_MULTI_SZ)))
           switch (SPDRPlist[i]) {
             case SPDRP_MFG : portinfo->SetManufacturer(tempstr); break;
+            case SPDRP_HARDWAREID : portinfo->SetHardwareID(tempstr); break;
             case SPDRP_DEVICEDESC : portinfo->SetDeviceDesc(tempstr); break;
             case SPDRP_FRIENDLYNAME : portinfo->SetFriendlyName(tempstr); break;
             case SPDRP_LOCATION_INFORMATION : portinfo->SetLocationInfo(tempstr); break;
@@ -166,11 +132,9 @@ BOOL CEnumerateSerial::EnumeratePorts()
   }
 
   // Free up the "device information set" now that we are finished with it
-  lpfnSETUPDIDESTROYDEVICEINFOLIST(hDevInfoSet);
-
+  SetupDiDestroyDeviceInfoList(hDevInfoSet);
 
   // Return the success indicator
   return TRUE;
 }
-
 

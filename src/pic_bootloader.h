@@ -44,7 +44,8 @@
 #define OLSFLAG_TWOBYTEXFER 0x02                 // Perform two byte write.  If not set, assumes 32 bytes.
 
 #define OLS_VID 0x04D8                           // Values for Logic Sniffer
-#define OLS_PID 0xFC90
+#define OLS_PID 0xFC90      // bootloader PID
+#define OLS_PID_COMM 0xFC92 // com-port PID
 
 
 typedef unsigned char *BUFPTR;
@@ -133,13 +134,13 @@ public:
     if (m_progress_hWnd) ::PostMessage(m_progress_hWnd, WM_PICBOOTLOADER_STATUS, percentage, status);
   };
 
-private:
   // Open USB channel to PIC...
   int open();
 
   // Close USB channel...
   void close();
 
+private:
   // Perform request & wait for response from PIC...
   int transaction(boot_cmd* pOut, boot_rsp* pIn);
 
@@ -148,7 +149,7 @@ private:
   int send_command(boot_cmd* pOut);
 
   // Make sure specified USB device has corrent vendor/product ID's...
-  bool isValidDevice(char *DevicePath);
+  bool isValidDevice(const char *DevicePath);
 };
 
 #endif // PIC_BOOTLOADER_H_INCLUDED

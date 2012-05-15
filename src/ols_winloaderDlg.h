@@ -52,6 +52,7 @@ public:
   // Operations...
   void UpdateOKButton();
   bool CheckBootloaderMode();
+  int GetPortInfo (int index, CString *portstr, CString *desc, BOOL *known_device = NULL);
 
   // Worker thread handler...
   bool CheckUserAbort(int tenths);

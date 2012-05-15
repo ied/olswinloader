@@ -42,6 +42,7 @@
 #include "pic_bootloader.h"
 #include "serial.h"
 #include "data_file.h"
+#include "enumusb.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -231,6 +232,44 @@ BEGIN_MESSAGE_MAP(CWinLoaderDialog, CDialog)
   ON_MESSAGE(OLS_UPLOAD_STATUS, OnUploadStatus)
   ON_MESSAGE(WM_PICBOOTLOADER_STATUS, OnUploadStatus)
 END_MESSAGE_MAP()
+
+
+
+//
+// Get port number as string, description & indicate if a known device.
+// Special case handling if OLS found in bootloader mode.
+//
+int CWinLoaderDialog::GetPortInfo (int index, CString *portstr, CString *desc, BOOL *known_device) 
+{
+  CString temp;
+
+  // Create COM# string...
+  int portnum = m_portlist.GetPortNum(index);
+  if (portnum>=0)
+    if (portnum == 0xFFFF)
+      temp = _T("OLS-HID");
+    else temp.Format(_T("COM%d"),portnum);
+  else temp.Empty();
+  if (portstr) *portstr = temp;
+
+  // Get description...
+  if (portnum>=0)
+    if (portnum == 0xFFFF)
+      temp = _T("(Logic Sniffer in Bootloader Mode)");
+    else temp = m_portlist.GetDescription(index);
+  else temp.Empty();
+
+  // See if device has known description...
+  BOOL known = FALSE;
+  for (int i=0; !known && !g_known_devices[i].IsEmpty(); i++) 
+    if (temp.Find(g_known_devices[i])>0) 
+      known = TRUE;
+
+  if (desc) *desc = temp;
+  if (known_device) *known_device = known;
+  return portnum;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -446,7 +485,6 @@ HCURSOR CWinLoaderDialog::OnQueryDragIcon()
 //
 void CWinLoaderDialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpItem) 
 {
-  CString temp;
   if ((nIDCtl == IDC_ANALYZERPORT_LIST) && (lpItem != NULL)) {
     int index = lpItem->itemID;
     COLORREF fgcolor, bgcolor, infocolor;
@@ -501,19 +539,12 @@ void CWinLoaderDialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpItem)
       CFont font,font2,*oldfont;
       font.CreateStockObject(ANSI_VAR_FONT);
 
-      int portnum = m_portlist.GetPortNum(index);
-      CString desc = m_portlist.GetDescription(index);
+      BOOL known_desc;
+      CString portstr, desc;
+      GetPortInfo(index, &portstr, &desc, &known_desc);
 
-      COMMPROP *cp;
-      cp = m_portlist.GetCommPropPtr(index);
-
-      // See if device is a known flavor...
-      BOOL known_desc = FALSE;
-      for (int i=0; !known_desc && !g_known_devices[i].IsEmpty(); i++) 
-        if (desc.Find(g_known_devices[i])>0) 
-          known_desc = TRUE;
-
-      if (known_desc) { // draw known devices in bold...
+      // Draw known devices in bold...
+      if (known_desc) { 
         LOGFONT lfont;
         font.GetLogFont(&lfont);
         lfont.lfWeight = FW_BOLD;
@@ -523,10 +554,7 @@ void CWinLoaderDialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpItem)
       else oldfont = dc.SelectObject(&font);
 
       // Draw COM port & description...
-      if (portnum == 0xFFFF)
-        temp = _T("OLS-HID");
-      else temp.Format(_T("COM%d"),portnum);
-      dc.TextOut(lpItem->rcItem.left+2, lpItem->rcItem.top+1, temp);
+      dc.TextOut(lpItem->rcItem.left+2, lpItem->rcItem.top+1, portstr);
 
       dc.SetBkColor(infocolor);
       dc.TextOut(lpItem->rcItem.left+m_portlist_comwidth+PORTLIST_COLUMNS_MARGIN, lpItem->rcItem.top+1, desc);
@@ -571,14 +599,14 @@ void CWinLoaderDialog::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpItem)
     int max_desc_width = 0;
     int max_height = 0;
     for (i=0; i<m_portlist.GetNumPorts(); i++) {
-      int portnum = m_portlist.GetPortNum(i);
-      if (portnum == 0xFFFF)
-        temp = _T("OLS-HID");
-      else temp.Format(_T("COM%d"),portnum);
-      sz = dc.GetTextExtent(temp);
+      CString portstr, desc;
+      GetPortInfo(i, &portstr, &desc);
+
+      sz = dc.GetTextExtent(portstr);
       if (sz.cx > max_port_width) max_port_width = sz.cx;
       if (sz.cy > max_height) max_height = sz.cy;
-      sz = dc.GetTextExtent(m_portlist.GetDescription(i));
+
+      sz = dc.GetTextExtent(desc);
       if (sz.cx > max_desc_width) max_desc_width = sz.cx;
       if (sz.cy > max_height) max_height = sz.cy;
     }
@@ -612,10 +640,8 @@ void CWinLoaderDialog::OnRefreshPortList()
     m_portlist.AddPort(4);
   }
 
-  if (CheckBootloaderMode()) {
-    CSerialPortInfo *portinfo = m_portlist.AddPort(0xFFFF);
-    if (portinfo) portinfo->SetLocationInfo("OLS in Bootloader Mode");
-  }
+  if (CheckBootloaderMode())
+    m_portlist.AddPort(0xFFFF);
 
   if (::IsWindow(m_hWnd)) {
     m_analyzerport_list.ResetContent();
@@ -624,13 +650,22 @@ void CWinLoaderDialog::OnRefreshPortList()
       int i,j;
 
       for (i=0; i<m_portlist.GetNumPorts(); i++) {
-        int portnum = m_portlist.GetPortNum(i);
-        CString desc = m_portlist.GetDescription(i);
+        CSerialPortInfo *portinfo = m_portlist.GetPortInfo(i);
+        if (portinfo) {
+          CString id = portinfo->GetHardwareID();
+          id.MakeUpper();
+          if ((id.Find("04D8")>0) && (id.Find("FC92")>0)) {
+            CEnumerateUSB eusb;
+            CString devname = eusb.GetStrName_iProduct(OLS_VID,OLS_PID_COMM);
+            portinfo->SetDeviceDesc(devname.GetBuffer(0));
+          }
+        }
 
-        if (portnum == 0xFFFF)
-          temp = _T("OLS-HID");
-        else temp.Format(_T("COM%d %s"),portnum,desc);
-        m_analyzerport_list.AddString(temp);
+        CString portstr, desc;
+        int portnum = GetPortInfo(i, &portstr, &desc);
+
+        TRACE ("ADDLIST: %s\n",portstr);
+        m_analyzerport_list.AddString(portstr);
 
         // Detect first port with a known device name.  
         // Select it for the default value (if no default available)...

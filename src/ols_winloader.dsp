@@ -128,6 +128,10 @@ SOURCE=.\enumser.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\enumusb.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\FileNameDialogEx.cpp
 # End Source File
 # Begin Source File
@@ -202,6 +206,10 @@ SOURCE=.\data_file.h
 # Begin Source File
 
 SOURCE=.\enumser.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\enumusb.h
 # End Source File
 # Begin Source File
 

@@ -2,13 +2,13 @@
 
 [General Info]
 Version=1
-LastClass=CWinLoaderDialog
-LastTemplate=CDialog
+LastClass=Cenumusb
+LastTemplate=generic CWnd
 NewFileInclude1=#include "stdafx.h"
 NewFileInclude2=#include "ols_winloader.h"
 LastPage=0
 
-ClassCount=4
+ClassCount=6
 Class1=CAboutDlg
 Class2=CWinLoaderApp
 Class3=CWinLoaderDialog
@@ -17,6 +17,8 @@ ResourceCount=3
 Resource1=IDD_OLS_WINLOADER_DIALOG
 Resource2=IDD_ABOUTBOX
 Class4=CAdvancedDialog
+Class5=CEnumerateUSB
+Class6=Cenumusb
 Resource3=IDD_ADVANCED_DIALOG
 
 [CLS:CAboutDlg]
@@ -104,4 +106,18 @@ BaseClass=CDialog
 Filter=D
 VirtualFilter=dWC
 LastObject=CAdvancedDialog
+
+[CLS:CEnumerateUSB]
+Type=0
+HeaderFile=EnumerateUSB.h
+ImplementationFile=EnumerateUSB.cpp
+BaseClass=generic CWnd
+Filter=W
+
+[CLS:Cenumusb]
+Type=0
+HeaderFile=enumusb.h
+ImplementationFile=enumusb.cpp
+BaseClass=generic CWnd
+Filter=W
 

@@ -73,19 +73,19 @@ IDR_MAINFRAME           ICON    DISCARDABLE     "res\\ols_winloader.ico"
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 252, 159
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 252, 153
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About Logic Sniffer Image Loader"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC_ICON,11,12,20,20,SS_NOTIFY
-    LTEXT           "Open Logic Sniffer Image Loader - Version 2.01",
+    LTEXT           "Open Logic Sniffer Image Loader - Version 2.04",
                     IDC_STATIC,52,10,193,8,SS_NOPREFIX
-    DEFPUSHBUTTON   "OK",IDOK,100,136,50,14,WS_GROUP
+    DEFPUSHBUTTON   "OK",IDOK,100,129,50,14,WS_GROUP
     LTEXT           "For more information see:\n   http://dangerousprototypes.com/open-logic-sniffer\n   http://www.gadgetfactory.net/gf/project/bufferflylogic\n   http://www.mygizmos.org/ols",
                     IDC_LINKS,52,40,193,34,SS_NOPREFIX
-    LTEXT           "   © 2010 Diolan - PIC Bootloader\n   © 2010 Michal Demin - FPGA Image Loader\n   © 1998-2010 PJ Naughter - Serial Enumerator\n   © 1999 Eran Yariv - Two Pass Image Scaler\n   © 2001-2002 David Yuheng Zhao - Visual Themes",
-                    IDC_STATIC,52,88,193,42,SS_NOPREFIX
+    LTEXT           "   © 2010 Diolan - PIC Bootloader\n   © 2010 Michal Demin - FPGA Image Loader\n   © 1998-2010 PJ Naughter - Serial Enumerator\n   © 2001-2002 David Yuheng Zhao - Visual Themes",
+                    IDC_STATIC,52,88,193,38,SS_NOPREFIX
     LTEXT           "Copyright © 2011 by Ian Davis\nThis software is released under the GNU GPL2.",
                     IDC_STATIC,52,18,193,16,SS_NOPREFIX
     LTEXT           "Some portions may embody copyrights of the following:",
@@ -166,8 +166,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,1,0
- PRODUCTVERSION 2,0,1,0
+ FILEVERSION 2,0,4,0
+ PRODUCTVERSION 2,0,4,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -185,14 +185,14 @@ BEGIN
             VALUE "Comments", "This software is released under the GNU GPL2.\0"
             VALUE "CompanyName", "\0"
             VALUE "FileDescription", "Open Logic Sniffer Windows Image Loader\0"
-            VALUE "FileVersion", "2, 0, 1, 0\0"
+            VALUE "FileVersion", "2, 0, 4, 0\0"
             VALUE "InternalName", "ols_winloader\0"
             VALUE "LegalCopyright", "Copyright © 2011 Ian Davis\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "ols_winloader.EXE\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Open Logic Sniffer Windows Image Loader\0"
-            VALUE "ProductVersion", "2, 0, 1, 0\0"
+            VALUE "ProductVersion", "2, 0, 4, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
@@ -218,7 +218,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 245
         TOPMARGIN, 7
-        BOTTOMMARGIN, 152
+        BOTTOMMARGIN, 146
     END
 
     IDD_OLS_WINLOADER_DIALOG, DIALOG

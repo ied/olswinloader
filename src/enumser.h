@@ -101,6 +101,7 @@ class CSerialPortInfo
 public:
   CSerialPortInfo() {
     m_portnum=-1; 
+    m_hardwareid=NULL;
     m_devicedesc=NULL; 
     m_friendlyname=NULL; 
     m_manufacturer=NULL; 
@@ -113,6 +114,7 @@ public:
 
   void MoveData(CSerialPortInfo &src) {
     m_portnum = src.m_portnum; src.m_portnum = -1;
+    m_hardwareid = src.m_hardwareid; src.m_hardwareid = NULL;
     m_devicedesc = src.m_devicedesc; src.m_devicedesc = NULL;
     m_friendlyname = src.m_friendlyname; src.m_friendlyname = NULL;
     m_manufacturer = src.m_manufacturer; src.m_manufacturer = NULL;
@@ -123,19 +125,19 @@ public:
 
   void Cleanup() {
     m_portnum=-1; 
-    if (m_devicedesc) free (m_devicedesc);
-    if (m_friendlyname) free (m_friendlyname);
-    if (m_manufacturer) free (m_manufacturer);
-    if (m_locationinfo) free (m_locationinfo);
-    if (m_physlocation) free (m_physlocation);
-    m_devicedesc = NULL;
-    m_friendlyname = NULL;
-    m_manufacturer = NULL;
-    m_locationinfo = NULL;
-    m_physlocation = NULL;
+    if (m_hardwareid) {free (m_hardwareid); m_hardwareid = NULL;}
+    if (m_devicedesc) {free (m_devicedesc); m_devicedesc = NULL;}
+    if (m_friendlyname) {free (m_friendlyname); m_friendlyname = NULL;}
+    if (m_manufacturer) {free (m_manufacturer); m_manufacturer = NULL;}
+    if (m_locationinfo) {free (m_locationinfo); m_locationinfo = NULL;}
+    if (m_physlocation) {free (m_physlocation); m_physlocation = NULL;}
   }
 
   inline void SetPortNum (int portnum) {m_portnum=portnum;}
+  inline void SetHardwareID (TCHAR *desc) {
+    if (m_hardwareid) {free (m_hardwareid); m_hardwareid = NULL;}
+    if (desc) m_hardwareid = _tcsdup(desc);
+  }
   inline void SetDeviceDesc (TCHAR *desc) {
     if (m_devicedesc) {free (m_devicedesc); m_devicedesc = NULL;}
     if (desc) m_devicedesc = _tcsdup(desc);
@@ -168,12 +170,14 @@ public:
   CString GetPortDeviceName() {return GetPortDeviceName(GetPortNum());}
 
   inline int GetPortNum() {return m_portnum;}
+  inline CString GetHardwareID() {if (m_hardwareid==NULL) return ""; else return m_hardwareid;}
   inline CString GetDeviceDesc() {if (m_devicedesc==NULL) return ""; else return m_devicedesc;}
   inline CString GetFriendlyName() {if (m_friendlyname==NULL) return ""; else return m_friendlyname;}
   inline CString GetManufacturer() {if (m_manufacturer==NULL) return ""; else return m_manufacturer;}
   inline CString GetLocationInfo() {if (m_locationinfo==NULL) return ""; else return m_locationinfo;}
   inline CString GetPhysLocation() {if (m_physlocation==NULL) return ""; else return m_physlocation;}
 
+  inline TCHAR *GetHardwareIDPtr() {return m_hardwareid;}
   inline TCHAR *GetDeviceDescPtr() {return m_devicedesc;}
   inline TCHAR *GetFriendlyNamePtr() {return m_friendlyname;}
   inline TCHAR *GetManufacturerPtr() {return m_manufacturer;}
@@ -181,8 +185,9 @@ public:
   inline TCHAR *GetPhysLocationPtr() {return m_physlocation;}
   inline COMMPROP *GetCommPropPtr () {return &m_commprop;}
 
-private:
+//private:
   int m_portnum;
+  TCHAR *m_hardwareid;
   TCHAR *m_devicedesc;
   TCHAR *m_friendlyname;
   TCHAR *m_manufacturer;
@@ -201,7 +206,10 @@ class CEnumerateSerial
 public:
   // Constructor/Destructor...
   CEnumerateSerial() {m_maxports=256; m_numports=0; m_portinfo = new CSerialPortInfo[m_maxports];}
-  ~CEnumerateSerial() {ResetPortList(); delete [] m_portinfo;}
+  ~CEnumerateSerial() {
+    ResetPortList(); 
+    delete [] m_portinfo;
+  }
 
   // Operations...
   BOOL EnumeratePorts();
@@ -222,6 +230,11 @@ public:
   CString GetPortDeviceName (int index) {
     CSerialPortInfo *portinfo = GetPortInfo(index); if (portinfo==NULL) return ""; 
     return portinfo->GetPortDeviceName();
+  }
+
+  inline CString GetHardwareID(int index) {
+    CSerialPortInfo *portinfo = GetPortInfo(index); if (portinfo==NULL) return ""; 
+    return portinfo->GetHardwareID();
   }
 
   inline CString GetDeviceDesc(int index) {
@@ -247,6 +260,11 @@ public:
   inline CString GetPhysLocation(int index) {
     CSerialPortInfo *portinfo = GetPortInfo(index); if (portinfo==NULL) return ""; 
     return portinfo->GetPhysLocation();
+  }
+
+  inline TCHAR *GetHardwareIDPtr(int index) {
+    CSerialPortInfo *portinfo = GetPortInfo(index); if (portinfo==NULL) return NULL; 
+    return portinfo->GetHardwareIDPtr();
   }
 
   inline TCHAR *GetDeviceDescPtr(int index) {
@@ -282,8 +300,17 @@ public:
   CString GetDescription(int index)
   {
     CString desc;
-    desc = GetLocationInfo(index);
-    if (desc.IsEmpty()) desc = GetDeviceDesc(index);
+
+    /*
+    TRACE ("LocationInfo: %s\n", GetLocationInfo(index));
+    TRACE ("HardwareID:   %s\n", GetHardwareID(index));
+    TRACE ("DeviceDesc:   %s\n", GetDeviceDesc(index));
+    TRACE ("FriendlyName: %s\n", GetFriendlyName(index));
+    TRACE ("Manufacturer: %s\n", GetManufacturer(index));
+    TRACE ("PhysLocation: %s\n", GetPhysLocation(index));
+    */
+
+    desc = GetDeviceDesc(index);
     if (desc.IsEmpty()) desc = GetFriendlyName(index);
     if (desc.IsEmpty()) desc = GetManufacturer(index);
     if (desc.IsEmpty()) desc = _T("Communications Port");

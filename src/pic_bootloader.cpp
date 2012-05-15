@@ -307,8 +307,7 @@ int PicBootloader::open()
       return PICRESULT_GETDEVICEDETAIL_FAIL;
     }
 
-    char *path = strdup(pDetails->DevicePath);
-
+    CString path(pDetails->DevicePath);
     if (isValidDevice(path)) { // valid device found
       m_hDevice = CreateFile(path, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
@@ -339,7 +338,7 @@ void PicBootloader::close()
 //
 // Make sure specified USB device has corrent vendor/product ID's...
 //
-bool PicBootloader::isValidDevice(char *DevicePath)
+bool PicBootloader::isValidDevice(const char *DevicePath)
 {
   HANDLE hHidDevice = CreateFile(DevicePath,
     GENERIC_READ | GENERIC_WRITE,
